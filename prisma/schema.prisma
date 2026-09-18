@@ -13,3 +13,36 @@ model AppSetting {
   value     String   @db.Text
   updatedAt DateTime @updatedAt
 }
+
+model ProductCategory {
+  slug String @id @db.VarChar(80)
+  name String @db.VarChar(191)
+  position Int @default(0)
+  products CostumeProduct[]
+}
+
+model CostumeProduct {
+  slug String @id @db.VarChar(100)
+  code String @unique @db.VarChar(40)
+  name String @db.VarChar(191)
+  description String @db.Text
+  image String @db.VarChar(500)
+  price Int
+  categorySlug String @db.VarChar(80)
+  category ProductCategory @relation(fields: [categorySlug], references: [slug])
+  gender String @db.VarChar(20)
+  availability String @db.VarChar(20)
+  minHeight Int
+  maxHeight Int
+  minWeight Int
+  maxWeight Int
+  tags Json
+  accessories Json
+  badge String @db.VarChar(80)
+  badgeTone String @default("red") @db.VarChar(20)
+  popularity Int @default(0)
+  published Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([published, categorySlug, price])
+}

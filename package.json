@@ -2,7 +2,9 @@
   "name": "thanh-y-cac",
   "version": "0.1.0",
   "private": true,
-  "engines": { "node": ">=22 <23" },
+  "engines": {
+    "node": ">=22 <23"
+  },
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
     "build": "prisma generate && next build",
@@ -12,10 +14,15 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:seed": "node --env-file=.env prisma/seed.mjs"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/noto-serif": "^5.3.0",
     "@prisma/client": "6.19.3",
+    "@tsparticles/react": "^3.0.0",
+    "@tsparticles/slim": "^3.9.1",
     "ioredis": "^5.8.2",
     "next": "15.5.25",
     "react": "^19.2.0",

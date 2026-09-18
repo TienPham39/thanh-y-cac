@@ -1,6 +1,15 @@
 # Thanh Y Các
 
-Bộ khung Next.js 15, React 19, App Router, TypeScript, Tailwind CSS 3, Node.js 22, MySQL 8.4, Prisma ORM 6, Redis 7.4 và npm. Trang chủ hiện là trang chờ tiếng Việt; chưa có chức năng nghiệp vụ.
+Bộ khung Next.js 15, React 19, App Router, TypeScript, Tailwind CSS 3, Node.js 22, MySQL 8.4, Prisma ORM 6, Redis 7.4 và npm. Trang chủ giới thiệu cổ phục được dựng theo thiết kế trong `public/images/pages`, hỗ trợ desktop và mobile.
+
+## Trang chủ
+
+- `src/components/home-page.tsx`: header, carousel, danh mục, quy trình thuê, liên hệ và footer.
+- `src/lib/home-data.ts`: bốn mẫu giới thiệu và nội dung quy trình theo ảnh thiết kế. Chưa lấy dữ liệu kho hàng từ MySQL.
+- Có lọc danh mục, xem thông tin, yêu thích và chọn trang phục trong phiên xem trang; tải lại trang sẽ xóa lựa chọn. Chưa tạo đơn thuê hoặc nhận thanh toán.
+- Đặt lịch qua điện thoại/Zalo **0779 312 303**; phòng thử **583/66 đường 30 tháng 4, TP. Cần Thơ**.
+- Blogs và danh mục đầy đủ chưa được xây dựng; các nút tương ứng hiển thị thông tin rõ ràng, không dẫn sang trang lỗi.
+- Ảnh sản phẩm đang dùng logo như bản mẫu. Khi có ảnh và danh mục thật, thay dữ liệu trong `home-data.ts` và component thẻ sản phẩm.
 
 ## Chạy toàn bộ bằng Docker
 

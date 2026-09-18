@@ -13,6 +13,7 @@ RUN npm run build
 
 FROM deps AS migrate
 COPY prisma ./prisma
+RUN ./node_modules/.bin/prisma generate
 USER node
 CMD ["./node_modules/.bin/prisma", "migrate", "deploy"]
 
