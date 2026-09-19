@@ -26,7 +26,7 @@ test ! -e .directadmin-upload/api/.db-password
 
 # lftp uses explicit FTPS on port 21. A valid TLS certificate is required.
 # No --delete flag: existing server-only files and database credentials stay put.
-lftp -u "$DIRECTADMIN_FTP_USER","$DIRECTADMIN_FTP_PASSWORD" -e "
+lftp -u "$DIRECTADMIN_FTP_USER","$DIRECTADMIN_FTP_PASSWORD" "ftp://$DIRECTADMIN_FTP_HOST:21" <<LFTP_COMMANDS
 set cmd:fail-exit yes
 set ftp:ssl-force yes
 set ftp:ssl-protect-data yes
@@ -40,4 +40,4 @@ mirror -R --no-perms --upload-older --verbose=1 .directadmin-upload .
 put .directadmin-upload/.htaccess -o .htaccess
 put .directadmin-upload/api/.htaccess -o api/.htaccess
 bye
-" "ftp://$DIRECTADMIN_FTP_HOST:21"
+LFTP_COMMANDS
