@@ -44,7 +44,7 @@ deploy_batch() {
     --data-binary "@$archive" \
     "$api?path=/&action=upload")
 
-  if [[ "$upload_response" == *'error=1'* || "$upload_response" == *'"error"'* ]]; then
+  if [[ "$upload_response" == *'error=1'* || "$upload_response" == *'"error":"1"'* || "$upload_response" == *'"error":1'* || "$upload_response" == *'"error":true'* ]]; then
     echo "DirectAdmin rejected deployment part $part: $upload_response" >&2
     exit 1
   fi
@@ -57,7 +57,7 @@ deploy_batch() {
     --data-urlencode "directory=$remote_path" \
     "$api")
 
-  if [[ "$extract_response" == *'error=1'* || "$extract_response" == *'"error"'* ]]; then
+  if [[ "$extract_response" == *'error=1'* || "$extract_response" == *'"error":"1"'* || "$extract_response" == *'"error":1'* || "$extract_response" == *'"error":true'* ]]; then
     echo "DirectAdmin rejected extraction of part $part: $extract_response" >&2
     exit 1
   fi
