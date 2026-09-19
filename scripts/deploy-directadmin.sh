@@ -33,7 +33,7 @@ max_batch_bytes=$((3 * 1024 * 1024))
 part=0
 
 deploy_batch() {
-  ((part += 1))
+  part=$((part + 1))
   tar -C .directadmin-upload -czf "$archive" "$@"
   echo "Uploading deployment part $part ($(du -h "$archive" | cut -f1))..."
 
@@ -74,7 +74,7 @@ for file in "${files[@]}"; do
     batch_bytes=0
   fi
   batch+=("$file")
-  ((batch_bytes += file_bytes))
+  batch_bytes=$((batch_bytes + file_bytes))
 done
 if (( ${#batch[@]} > 0 )); then
   deploy_batch "${batch[@]}"
