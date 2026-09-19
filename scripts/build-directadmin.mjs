@@ -6,11 +6,18 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const stage = await mkdtemp(path.join(root, ".directadmin-build-"));
 const dist = path.join(root, "dist");
+const excludedFromStaticDeploy = new Set([
+  path.join(root, "src", "app", "api"),
+  path.join(root, "public", "images", "pages"),
+  path.join(root, "public", "images", "banner-1.png"),
+  path.join(root, "public", "images", "banner-2.png"),
+  path.join(root, "public", "images", "banner-3.png"),
+]);
 try {
   for (const name of ["src", "public", "tsconfig.json", "next-env.d.ts", "postcss.config.mjs", "tailwind.config.ts", "package.json", "eslint.config.mjs"]) {
     await cp(path.join(root, name), path.join(stage, name), {
       recursive: true,
-      filter: (source) => source !== path.join(root, "src", "app", "api"),
+      filter: (source) => !excludedFromStaticDeploy.has(source),
     });
   }
   await writeFile(path.join(stage, "next.config.mjs"), `export default {

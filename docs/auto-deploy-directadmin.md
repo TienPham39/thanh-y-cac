@@ -1,6 +1,6 @@
 # Tự động deploy DirectAdmin từ GitHub
 
-Workflow `.github/workflows/deploy-directadmin.yml` kiểm tra và build khi có pull request vào `main`. Sau mỗi lần push lên `main`, nếu kiểm tra thành công, workflow tải một gói build lên **DirectAdmin HTTPS API (cổng 2222)** rồi giải nén vào `public_html`. Website vẫn chạy frontend tĩnh, PHP API và MariaDB trên DirectAdmin; GitHub chỉ build và upload, không chạy Node.js trên hosting.
+Workflow `.github/workflows/deploy-directadmin.yml` kiểm tra và build khi có pull request vào `main`. Sau mỗi lần push lên `main`, nếu kiểm tra thành công, workflow chia bản build thành các gói nhỏ, tải chúng lên **DirectAdmin HTTPS API (cổng 2222)** rồi giải nén vào `public_html`. Việc chia nhỏ tránh giới hạn kích thước request của proxy hosting. Website vẫn chạy frontend tĩnh, PHP API và MariaDB trên DirectAdmin; GitHub chỉ build và upload, không chạy Node.js trên hosting.
 
 ## 1. Kiểm tra tài khoản FTP trong DirectAdmin
 
