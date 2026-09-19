@@ -1,6 +1,6 @@
 # Tự động deploy DirectAdmin từ GitHub
 
-Workflow `.github/workflows/deploy-directadmin.yml` kiểm tra và build khi có pull request vào `main`. Sau mỗi lần push lên `main`, nếu kiểm tra thành công, workflow chia bản build thành các gói nhỏ, tải chúng lên **DirectAdmin HTTPS API (cổng 2222)** rồi giải nén vào `public_html`. Việc chia nhỏ tránh giới hạn kích thước request của proxy hosting. Website vẫn chạy frontend tĩnh, PHP API và MariaDB trên DirectAdmin; GitHub chỉ build và upload, không chạy Node.js trên hosting.
+Workflow `.github/workflows/deploy-directadmin.yml` kiểm tra và build khi có pull request vào `main`. Sau mỗi lần push lên `main`, nếu kiểm tra thành công, workflow kiểm tra đăng nhập API, chia bản build thành các gói nhỏ, tải chúng lên **DirectAdmin HTTPS API (cổng 2222)** bằng `multipart/form-data` rồi giải nén vào `public_html`. Việc chia nhỏ tránh giới hạn kích thước request của proxy hosting. Website vẫn chạy frontend tĩnh, PHP API và MariaDB trên DirectAdmin; GitHub chỉ build và upload, không chạy Node.js trên hosting.
 
 ## 1. Kiểm tra tài khoản FTP trong DirectAdmin
 
@@ -50,4 +50,4 @@ Lần push này sẽ kích hoạt workflow. Những lần sau, commit và push c
 
 Workflow không xóa file trên server. Vì vậy mật khẩu database, dữ liệu upload hoặc file chỉ có trên server không bị xóa; các asset cũ có thể còn trên hosting. Khi cần hoàn tác code, dùng `git revert` commit gây lỗi rồi push `main` để workflow triển khai bản trước. Database không được workflow tự thay đổi; nếu thay đổi schema, cập nhật SQL/backup và xử lý riêng.
 
-Nếu job `deploy` báo thiếu biến, kiểm tra đúng tên environment `production` và 4 giá trị ở bước 2. Nếu báo `401`, cập nhật secret bằng mật khẩu đăng nhập DirectAdmin. Nếu lỗi chứng chỉ TLS, sửa hostname/chứng chỉ với nhà cung cấp hosting; không tắt xác thực TLS. Nếu giải nén sai đường dẫn, chỉnh `DIRECTADMIN_FTP_PATH` theo thư mục home thực tế của tài khoản.
+Nếu job `deploy` báo thiếu biến, kiểm tra đúng tên environment `production` và 4 giá trị ở bước 2. Dòng `DirectAdmin API login verified` xác nhận host và tài khoản hoạt động; lỗi sau dòng này thuộc thao tác upload hoặc giải nén. Nếu báo `401`, cập nhật secret bằng mật khẩu đăng nhập DirectAdmin. Nếu lỗi chứng chỉ TLS, sửa hostname/chứng chỉ với nhà cung cấp hosting; không tắt xác thực TLS. Nếu giải nén sai đường dẫn, chỉnh `DIRECTADMIN_FTP_PATH` theo thư mục home thực tế của tài khoản.
