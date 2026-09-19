@@ -4,6 +4,7 @@ out/
 dist/
 dist.zip
 .directadmin-build-*/
+.directadmin-upload/
 coverage/
 *.tsbuildinfo
 .env*

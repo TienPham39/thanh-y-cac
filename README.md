@@ -79,3 +79,8 @@ Mật khẩu mẫu chỉ dành cho máy local. Thay mật khẩu trong `.env` tr
 App mặc định bind `127.0.0.1:3000`, phù hợp truy cập local hoặc reverse proxy trên host. Khi triển khai công khai cần cấu hình domain, HTTPS, reverse proxy và backup MySQL. Docker không publish cổng MySQL/Redis trừ khi dùng file dev.
 
 Nguồn tham khảo: [Next.js self-hosting](https://nextjs.org/docs/15/app/guides/self-hosting), [Prisma ORM 6](https://docs.prisma.io/docs/orm/v6), [Docker Compose](https://docs.docker.com/compose/).
+# Deploy toàn bộ lên DirectAdmin
+
+Chạy `npm run build:directadmin` để tạo frontend tĩnh và PHP API trong `dist/`. Xem [hướng dẫn DirectAdmin + PHP](docs/deploy-directadmin-php.md) để import MariaDB, điền mật khẩu an toàn, upload ZIP và kiểm tra website. Phương án Vercel cũ vẫn được ghi riêng trong `docs/deploy-directadmin-vercel.md` nếu cần dùng lại.
+
+Để tự động build và cập nhật DirectAdmin khi push lên `main`, xem [hướng dẫn GitHub Actions](docs/auto-deploy-directadmin.md).

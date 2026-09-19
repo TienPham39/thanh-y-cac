@@ -1,0 +1,76 @@
+name: Build and deploy DirectAdmin
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: directadmin-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate Prisma client for type checking
+        run: npm run db:generate
+      - name: Lint
+        run: npm run lint
+      - name: Type check
+        run: npm run typecheck
+      - name: Build DirectAdmin site
+        run: npm run build:directadmin
+      - name: Check deploy files
+        run: |
+          test -f dist/index.html
+          test -f dist/.htaccess
+          test -f dist/api/index.php
+          test -f dist/api/.htaccess
+          test -f dist/images/banner-1.webp
+          test "$(cat dist/api/.db-password)" = CHANGE_ME
+      - uses: actions/upload-artifact@v4
+        with:
+          name: directadmin-dist
+          path: |
+            dist/
+            !dist/api/.db-password
+          include-hidden-files: true
+          retention-days: 7
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: directadmin-dist
+          path: dist/
+      - name: Install FTPS client
+        run: sudo apt-get update && sudo apt-get install -y lftp rsync
+      - name: Upload website over FTPS
+        env:
+          DIRECTADMIN_FTP_HOST: ${{ secrets.DIRECTADMIN_FTP_HOST }}
+          DIRECTADMIN_FTP_USER: ${{ secrets.DIRECTADMIN_FTP_USER }}
+          DIRECTADMIN_FTP_PASSWORD: ${{ secrets.DIRECTADMIN_FTP_PASSWORD }}
+          DIRECTADMIN_FTP_PATH: ${{ vars.DIRECTADMIN_FTP_PATH }}
+        run: bash scripts/deploy-directadmin.sh
+      - name: Check live website
+        run: |
+          curl --fail --silent --show-error --retry 3 --retry-delay 5 https://thanhycac.com/api/ready
+          curl --fail --silent --show-error --head https://thanhycac.com/images/banner-1.webp > /dev/null
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' https://thanhycac.com/api/.db-password)" = 403
