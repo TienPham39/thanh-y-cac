@@ -218,6 +218,9 @@ a:focus-visible {
   position: relative;
   isolation: auto;
   background: #3d2418;
+  background-image: url('/images/banner-preview.webp');
+  background-size: cover;
+  background-position: center top;
   color: #fff8ed;
   overflow: hidden;
 }

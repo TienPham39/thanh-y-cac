@@ -15,7 +15,7 @@ import {
   type Product,
 } from "@/lib/home-data";
 
-const slides = ["banner-3.png", "banner-1.png", "banner-2.png?v=20260918-1612"];
+const slides = ["banner-3.webp", "banner-1.webp", "banner-2.webp"];
 type Panel =
   | { kind: "product"; product: Product }
   | { kind: "favorites" }

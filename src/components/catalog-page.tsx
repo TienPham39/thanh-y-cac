@@ -14,6 +14,7 @@ import { CatalogCard } from "./catalog-card";
 import { CatalogFilters, control } from "./catalog-filters";
 import { Icon } from "./icon";
 import { formatPrice } from "@/lib/home-data";
+import { apiFetch } from "@/lib/api-fetch";
 import type {
   CatalogCategory,
   CatalogProduct,
@@ -43,14 +44,14 @@ export default function CatalogPage() {
     setLoading(true);
     setError("");
     Promise.all([
-      fetch(`/api/products?${query}`, { signal: abort.signal }).then(
+      apiFetch(`/api/products?${query}`, { signal: abort.signal }).then(
         async (r) => {
           const body = await r.json();
           if (!r.ok) throw new Error(body.error?.message);
           return body as CatalogResponse;
         },
       ),
-      fetch("/api/product-categories", { signal: abort.signal }).then(
+      apiFetch("/api/product-categories", { signal: abort.signal }).then(
         async (r) => {
           if (!r.ok) throw new Error("Chưa tải được danh mục.");
           return r.json();
@@ -102,7 +103,7 @@ export default function CatalogPage() {
   async function openDetail(slug: string) {
     setDetailError("");
     try {
-      const r = await fetch(`/api/products/${slug}`);
+      const r = await apiFetch(`/api/products/${slug}`);
       if (!r.ok) throw new Error();
       setDetail((await r.json()).data);
     } catch {

@@ -1,9 +1,13 @@
 node_modules/
 .next/
 out/
+dist/
+dist.zip
+.directadmin-build-*/
 coverage/
 *.tsbuildinfo
 .env*
 !.env.example
 *.log
 .DS_Store
+**/.db-password
