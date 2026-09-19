@@ -24,20 +24,36 @@ mkdir -p .directadmin-upload
 rsync -a --delete --exclude='.db-password' dist/ .directadmin-upload/
 test ! -e .directadmin-upload/api/.db-password
 
-# lftp uses explicit FTPS on port 21. A valid TLS certificate is required.
-# No --delete flag: existing server-only files and database credentials stay put.
-lftp -u "$DIRECTADMIN_FTP_USER","$DIRECTADMIN_FTP_PASSWORD" "ftp://$DIRECTADMIN_FTP_HOST:21" <<LFTP_COMMANDS
-set cmd:fail-exit yes
-set ftp:ssl-force yes
-set ftp:ssl-protect-data yes
-set ftp:list-options -a
-set ssl:verify-certificate yes
-set ssl:check-hostname yes
-set net:timeout 20
-set net:max-retries 2
-cd $DIRECTADMIN_FTP_PATH
-mirror -R --no-perms --upload-older --verbose=1 .directadmin-upload .
-put .directadmin-upload/.htaccess -o .htaccess
-put .directadmin-upload/api/.htaccess -o api/.htaccess
-bye
-LFTP_COMMANDS
+# DirectAdmin's HTTPS API is used because some hosts reject GitHub runner IPs
+# on FTP port 21. The archive is kept outside public_html during extraction.
+archive=.directadmin-deploy.tar.gz
+remote_path="/${DIRECTADMIN_FTP_PATH#/}"
+tar -C .directadmin-upload -czf "$archive" .
+
+api="https://${DIRECTADMIN_FTP_HOST}:2222/CMD_API_FILE_MANAGER"
+upload_response=$(curl --fail --silent --show-error --retry 2 \
+  --user "$DIRECTADMIN_FTP_USER:$DIRECTADMIN_FTP_PASSWORD" \
+  -H 'X-DirectAdmin-File-Upload: yes' \
+  -H "X-DirectAdmin-File-Name: $archive" \
+  --data-binary "@$archive" \
+  "$api?path=/&action=upload")
+
+if [[ "$upload_response" == *'error=1'* || "$upload_response" == *'"error"'* ]]; then
+  echo "DirectAdmin rejected the upload: $upload_response" >&2
+  exit 1
+fi
+
+extract_response=$(curl --fail --silent --show-error --retry 2 \
+  --user "$DIRECTADMIN_FTP_USER:$DIRECTADMIN_FTP_PASSWORD" \
+  --data-urlencode 'action=extract' \
+  --data-urlencode 'page=2' \
+  --data-urlencode "path=/$archive" \
+  --data-urlencode "directory=$remote_path" \
+  "$api")
+
+if [[ "$extract_response" == *'error=1'* || "$extract_response" == *'"error"'* ]]; then
+  echo "DirectAdmin rejected the extraction: $extract_response" >&2
+  exit 1
+fi
+
+echo 'DirectAdmin upload and extraction completed.'

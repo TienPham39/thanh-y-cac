@@ -60,9 +60,7 @@ jobs:
         with:
           name: directadmin-dist
           path: dist/
-      - name: Install FTPS client
-        run: sudo apt-get update && sudo apt-get install -y lftp rsync
-      - name: Upload website over FTPS
+      - name: Upload website through DirectAdmin API
         env:
           DIRECTADMIN_FTP_HOST: ${{ secrets.DIRECTADMIN_FTP_HOST }}
           DIRECTADMIN_FTP_USER: ${{ secrets.DIRECTADMIN_FTP_USER }}
