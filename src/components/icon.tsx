@@ -18,11 +18,13 @@ export type IconName =
   | "menu"
   | "search"
   | "tag"
+  | "logout"
   | "reset";
 
 const paths: Record<IconName, React.ReactNode> = {
   search: <><circle cx="10.5" cy="10.5" r="7.5" /><path d="m16 16 5 5" /></>,
   tag: <><path d="M20 3h-7L3 13a2 2 0 0 0 0 3l5 5a2 2 0 0 0 3 0L21 11V4a1 1 0 0 0-1-1Z" /><circle cx="17" cy="7" r="1" /></>,
+  logout: <><path d="M10 5V3H4v18h6v-2" /><path d="M14 8l4 4-4 4m4-4H8" /></>,
   reset: <><path d="M20 7a9 9 0 0 0-15-2L3 8m0-5v5h5M4 17a9 9 0 0 0 15 2l2-3m0 5v-5h-5" /></>,
   calendar: (
     <>

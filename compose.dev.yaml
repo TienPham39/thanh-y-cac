@@ -1,5 +1,7 @@
 # Overlay for npm run dev on the host, with only infrastructure in Docker.
 services:
+  app:
+    profiles: ["production"]
   mysql:
     ports:
       - "127.0.0.1:3306:3306"

@@ -58,7 +58,8 @@ export default function SiteLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const home = usePathname() === "/";
+  const pathname = usePathname();
+  const home = pathname === "/";
   const [menuOpen, setMenuOpen] = useState(false);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [cart, setCart] = useState<string[]>([]);
@@ -76,6 +77,7 @@ export default function SiteLayout({
     modal?.showModal();
     return () => modal?.close();
   }, [panel]);
+  if (pathname === "/login" || pathname.startsWith("/admin")) return <>{children}</>;
   return (
     <Context.Provider value={{ favorites, setFavorites, cart, setCart }}>
       <CherryBlossomParticles />

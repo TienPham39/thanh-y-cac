@@ -10,6 +10,7 @@
     "build": "prisma generate && next build",
     "build:directadmin": "node scripts/build-directadmin.mjs",
     "start": "next start --hostname 0.0.0.0",
+    "test": "node --experimental-strip-types --test src/**/*.test.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
