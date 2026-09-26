@@ -6,18 +6,16 @@
  FORM: User-pinned reference; preserve its composition with responsive controls. */
 import { PageReveal } from "./page-reveal";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CatalogRental } from "./catalog-shell";
 import { useSiteState } from "./site-layout";
 import { CatalogCard } from "./catalog-card";
 import { CatalogFilters, control } from "./catalog-filters";
 import { Icon } from "./icon";
-import { formatPrice } from "@/lib/home-data";
 import { apiFetch } from "@/lib/api-fetch";
 import type {
   CatalogCategory,
-  CatalogProduct,
   CatalogResponse,
 } from "@/lib/catalog-types";
 export default function CatalogPage() {
@@ -33,9 +31,6 @@ export default function CatalogPage() {
   const [retry, setRetry] = useState(0);
   const [keyword, setKeyword] = useState(params.get("q") ?? "");
   const { favorites, setFavorites } = useSiteState();
-  const [detail, setDetail] = useState<CatalogProduct | null>(null);
-  const [detailError, setDetailError] = useState("");
-  const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     setKeyword(new URLSearchParams(query).get("q") ?? "");
   }, [query]);
@@ -71,12 +66,6 @@ export default function CatalogPage() {
       });
     return () => abort.abort();
   }, [query, retry]);
-  useEffect(() => {
-    if (!detail) return;
-    const modal = dialog.current;
-    modal?.showModal();
-    return () => modal?.close();
-  }, [detail]);
   function change(key: string, value: string, multiple = false) {
     const next = new URLSearchParams(query);
     next.delete("page");
@@ -100,15 +89,8 @@ export default function CatalogPage() {
     if (slug) next.set("category", slug);
     router.push(`/trang-phuc?${next}`, { scroll: false });
   }
-  async function openDetail(slug: string) {
-    setDetailError("");
-    try {
-      const r = await apiFetch(`/api/products/${slug}`);
-      if (!r.ok) throw new Error();
-      setDetail((await r.json()).data);
-    } catch {
-      setDetailError("Chưa tải được chi tiết. Vui lòng thử lại.");
-    }
+  function openDetail(slug: string) {
+    router.push(`/trang-phuc/${slug}`);
   }
   const reset = () => router.push("/trang-phuc", { scroll: false });
   return (
@@ -126,7 +108,8 @@ export default function CatalogPage() {
           />
           <div className="absolute inset-0 bg-white/35" />
           <h1 data-catalog-reveal className="relative z-[2] max-w-4xl text-center text-3xl font-bold leading-snug text-[#650c13] sm:text-4xl lg:text-[44px]">
-            Khám Phá Thế Giới Cổ Phục Thanh Y Các
+            Khám Phá Thế Giới Cổ Phục{" "}
+            <span className="whitespace-nowrap">Thanh Y Các</span>
           </h1>
         </section>
         <section
@@ -338,11 +321,6 @@ export default function CatalogPage() {
                     </button>
                   </div>
                 )}
-                {detailError && (
-                  <p role="alert" className="mt-4 text-[#80151c]">
-                    {detailError}
-                  </p>
-                )}
                 {!loading &&
                   !error &&
                   result &&
@@ -390,52 +368,6 @@ export default function CatalogPage() {
         </section>
         <CatalogRental />
       </main>
-      <dialog
-        ref={dialog}
-        onCancel={() => setDetail(null)}
-        aria-labelledby="catalog-detail-title"
-        className="m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-xl overflow-y-auto rounded-2xl border border-[#eddad2] bg-white p-6 backdrop:bg-black/50"
-      >
-        {detail && (
-          <>
-            <button
-              autoFocus
-              aria-label="Đóng chi tiết"
-              onClick={() => setDetail(null)}
-              className="ml-auto flex h-11 w-11 items-center justify-center rounded-lg text-[#80151c]"
-            >
-              <Icon name="close" />
-            </button>
-            <p className="text-sm text-[#75645f]">{detail.code}</p>
-            <h2
-              id="catalog-detail-title"
-              className="my-4 text-2xl font-bold text-[#80151c]"
-            >
-              {detail.name}
-            </h2>
-            <p className="leading-relaxed">{detail.description}</p>
-            <p className="my-4 text-xl font-bold text-[#80151c]">
-              {formatPrice(detail.price)} / 24 giờ
-            </p>
-            <p className="text-sm">
-              Chiều cao {detail.minHeight}–{detail.maxHeight} cm · Cân nặng{" "}
-              {detail.minWeight}–{detail.maxWeight} kg.
-            </p>
-            <p className="my-4 text-sm text-[#75645f]">
-              Mẫu giới thiệu. Liên hệ để xác nhận ảnh thực tế, giá và lịch còn
-              trống. Gửi mã {detail.code} khi đặt lịch.
-            </p>
-            <a
-              href="https://zalo.me/0779312303"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex rounded-lg bg-[#80151c] px-5 py-3 text-white"
-            >
-              Đặt lịch thử qua Zalo
-            </a>
-          </>
-        )}
-      </dialog>
     </>
   );
 }

@@ -4,6 +4,7 @@ export type CatalogProduct = {
   name: string;
   description: string;
   image: string;
+  images?: string[];
   price: number;
   categorySlug: string;
   gender: string;
@@ -16,6 +17,7 @@ export type CatalogProduct = {
   accessories: string[];
   badge: string;
   badgeTone: string;
+  popularity: number;
 };
 export type CatalogCategory = { slug: string; name: string; count: number };
 export type CatalogResponse = {

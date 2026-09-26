@@ -41,23 +41,24 @@ export default function LoginPage() {
     }
   }
   return (
-    <div className="min-h-screen bg-[#fff8f6] text-[#624a47]">
-      <header className="flex h-24 items-center border-b border-[#eddbd5] bg-white px-6 md:px-[5.5%]">
+    <div className="flex h-dvh flex-col overflow-hidden bg-[#fff8f6] text-[#624a47]">
+      <header className="flex h-16 shrink-0 items-center border-b border-[#eddbd5] bg-white px-6 md:px-[5.5%]">
         <Link href="/" aria-label="Thanh Y Các — Trang chủ">
           <Image
             src="/images/logo2.png"
             alt="Thanh Y Các"
             width={174}
             height={60}
+            className="h-12 w-auto"
             priority
           />
         </Link>
       </header>
-      <main className="grid min-h-[calc(100svh-96px)] lg:grid-cols-2">
-        <div className="flex items-center justify-center px-6 py-16">
-          <div className="w-full max-w-[420px]">
-            <div className="mb-14 text-center">
-              <span className="text-3xl text-[#80151c]" aria-hidden="true">
+      <main className="grid min-h-0 flex-1 lg:grid-cols-2">
+        <div className="flex min-h-0 flex-col overflow-y-auto px-6 py-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [@media(max-height:800px)]:py-4">
+          <div className="mx-auto my-auto w-full max-w-[420px] shrink-0">
+            <div className="mb-10 text-center [@media(max-height:800px)]:mb-6 [@media(max-height:650px)]:mb-4">
+              <span className="text-3xl text-[#80151c] [@media(max-height:650px)]:hidden" aria-hidden="true">
                 ❀
               </span>
               <h1 className="mb-3 mt-3 text-[34px] font-bold text-[#650912]">
@@ -67,14 +68,14 @@ export default function LoginPage() {
                 Bước vào không gian phục dựng y phục vương triều xưa
               </p>
               <div
-                className="mx-auto mt-6 flex w-28 items-center gap-2 text-[#bb8531]"
+                className="mx-auto mt-6 flex w-28 items-center gap-2 text-[#bb8531] [@media(max-height:800px)]:mt-3 [@media(max-height:650px)]:hidden"
                 aria-hidden="true"
               >
                 <span className="h-px flex-1 bg-[#e8c98f]" />❀
                 <span className="h-px flex-1 bg-[#e8c98f]" />
               </div>
             </div>
-            <form onSubmit={submitLogin} className="space-y-5">
+            <form onSubmit={submitLogin} className="space-y-5 [@media(max-height:800px)]:space-y-4">
               <label className="block text-sm">
                 Số điện thoại hoặc Email
                 <input
@@ -83,7 +84,7 @@ export default function LoginPage() {
                   autoComplete="username"
                   defaultValue="admin@thanhycac.com"
                   placeholder="Nhập SĐT hoặc Email..."
-                  className="mt-2 h-11 w-full rounded border border-[#ead7d0] bg-transparent px-4 outline-none focus:border-[#80151c]"
+                  className="mt-3 h-11 w-full appearance-none rounded border-2 border-[#ead7d0] bg-transparent px-4 !outline-[0px] !outline-offset-0 focus:border-[#80151c] focus:!shadow-none"
                 />
               </label>
               <label className="block text-sm">
@@ -96,7 +97,7 @@ export default function LoginPage() {
                     autoComplete="current-password"
                     type={visible ? "text" : "password"}
                     placeholder="••••••••"
-                    className="h-11 w-full rounded border border-[#ead7d0] bg-transparent px-4 pr-14 outline-none focus:border-[#80151c]"
+                    className="h-11 w-full appearance-none rounded border-2 border-[#ead7d0] bg-transparent px-4 pr-14 !outline-[0px] !outline-offset-0 focus:border-[#80151c] focus:!shadow-none"
                   />
                   <button
                     type="button"
@@ -141,7 +142,7 @@ export default function LoginPage() {
                   Quên mật khẩu?
                 </button>
               </div>
-              <button disabled={submitting} className="!mt-10 h-12 w-full rounded border border-[#c69b50] bg-[#80151c] font-medium text-white hover:bg-[#650912] disabled:cursor-wait disabled:opacity-70">
+              <button disabled={submitting} className="!mt-6 h-12 w-full rounded border border-[#c69b50] bg-[#80151c] font-medium text-white hover:bg-[#650912] disabled:cursor-wait disabled:opacity-70 [@media(max-height:650px)]:!mt-4">
                 {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
               </button>
               {message && (
@@ -161,7 +162,7 @@ export default function LoginPage() {
             </p>
           </div>
         </div>
-        <aside className="relative hidden min-h-[calc(100svh-96px)] overflow-hidden bg-[#211714] lg:block">
+        <aside className="relative hidden min-h-0 overflow-hidden bg-[#211714] lg:block">
           <figure className="absolute inset-0">
             <Image
               src="/images/login-portrait-v2.png"

@@ -141,7 +141,8 @@ export async function listProducts(params: URLSearchParams) {
   };
 }
 export function serializeProduct(
-  row: Omit<CatalogProduct, "tags" | "accessories"> & {
+  row: Omit<CatalogProduct, "tags" | "accessories" | "images"> & {
+    images?: Prisma.JsonValue;
     tags: Prisma.JsonValue;
     accessories: Prisma.JsonValue;
   },
@@ -152,6 +153,7 @@ export function serializeProduct(
     name: row.name,
     description: row.description,
     image: row.image,
+    ...(Array.isArray(row.images) ? { images: [...new Set([row.image, ...row.images.filter((value): value is string => typeof value === "string" && value.length > 0)])] } : {}),
     price: row.price,
     categorySlug: row.categorySlug,
     gender: row.gender,
@@ -168,7 +170,38 @@ export function serializeProduct(
       : [],
     badge: row.badge,
     badgeTone: row.badgeTone,
+    popularity: row.popularity,
   };
+}
+
+export async function getProductBySlug(slug: string) {
+  if (!/^[a-z0-9-]{1,100}$/.test(slug)) return null;
+  const row = await getPrisma().costumeProduct.findFirst({
+    where: { slug, published: true },
+  });
+  return row ? serializeProduct(row) : null;
+}
+
+export async function listRelatedProducts(product: CatalogProduct, take = 4) {
+  const related = await getPrisma().costumeProduct.findMany({
+    where: {
+      published: true,
+      categorySlug: product.categorySlug,
+      slug: { not: product.slug },
+    },
+    orderBy: [{ popularity: "desc" }, { updatedAt: "desc" }],
+    take,
+  });
+  if (related.length < take) {
+    const excluded = [product.slug, ...related.map(row => row.slug)];
+    const remaining = await getPrisma().costumeProduct.findMany({
+      where: { published: true, slug: { notIn: excluded } },
+      orderBy: [{ popularity: "desc" }, { updatedAt: "desc" }],
+      take: take - related.length,
+    });
+    related.push(...remaining);
+  }
+  return related.map(serializeProduct);
 }
 export async function listCategories() {
   const rows = await getPrisma().productCategory.findMany({

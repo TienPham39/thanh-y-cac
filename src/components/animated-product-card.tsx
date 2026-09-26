@@ -2,12 +2,12 @@
 
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 
-export function AnimatedProductCard({ children, className }: { children: ReactNode; className: string }) {
+export function AnimatedProductCard({ children, className, enabled = true }: { children: ReactNode; className: string; enabled?: boolean }) {
   const ref = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
     const card = ref.current;
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (!card || preference.matches || !("IntersectionObserver" in window)) return;
+    if (!enabled || !card || preference.matches || !("IntersectionObserver" in window)) return;
     let animation: Animation | undefined;
     const reveal = () => {
       card.style.opacity = "";
@@ -35,6 +35,6 @@ export function AnimatedProductCard({ children, className }: { children: ReactNo
       card.removeEventListener("focusin", reveal);
       preference.removeEventListener("change", reveal);
     };
-  }, []);
+  }, [enabled]);
   return <article ref={ref} className={className}>{children}</article>;
 }

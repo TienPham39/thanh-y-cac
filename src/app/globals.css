@@ -1260,5 +1260,12 @@ address {
 
 
 
-/* Keep decorative petals above section backgrounds, below reading surfaces. */
+/* Keep the footer above the decorative particle canvas. */
 .site-footer { position: relative; z-index: 2; }
+
+/* Use one typeface throughout the product detail route, including shared chrome. */
+body:has(.product-detail-page),
+body:has(.product-detail-page) * {
+  font-family: "Inter", sans-serif;
+}
+

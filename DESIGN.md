@@ -31,3 +31,10 @@ Trang /trang-phuc: bộ lọc có tiêu đề và nút Mặc định cùng hàng
 `nTinh chỉnh reveal: useLayoutEffect chuẩn bị trước paint, 600ms/20px, delay đầu 80ms + 100ms mỗi cột (tối đa thêm 300ms); reload remount chạy lại, scroll quay lại không lặp. Vùng hover bao toàn ảnh, scale 1.07, 350ms.
 `nTrang catalog: header, banner title, toolbar, sidebar panels, status, pagination, rental heading/steps và footer columns reveal 550ms/14px, stagger tối đa 210ms; một lần mỗi DOM element, cleanup khi rời route, keyboard focus hiển thị ngay. Không transform phần tử sticky hoặc thêm wrapper thay layout.
 `nTrang chủ dùng PageReveal chung: hero copy/actions/stats, carousel controls, collection heading/tabs/CTA, rental steps, contact và footer; chỉ reveal lần đầu vào viewport, hỗ trợ reduced motion. Menu Thuê trang phục active có cùng gạch ngang/hình thoi với Trang chủ.
+
+## Trang chi tiết trang phục — Boutique showroom
+Phạm vi /trang-phuc/[slug]: bám frame Figma 8:1098, nền #fff8f6, card trắng hoặc #fef1ed với viền đỏ rượu 2px #80151c và bo 8px. Khung tối đa 1280px, padding ngang 24px, lưới 12 cột với khoảng cách 40px; ảnh chiếm 5 cột và hồ sơ sản phẩm chiếm 7 cột. Inter cho thông tin và controls, Noto Serif cho tên trang phục. Đỏ #80151c dành cho giá và hành động chính. Khu đặt lịch lặp lại tỷ lệ 5/7. Chính sách là ba card ngang trên desktop và xếp dọc trên mobile. Related products 2 hoặc 4 cột. Hoa anh đào nằm sau card. Các màn khác giữ thiết kế hiện tại.
+
+
+## Cập nhật trang chi tiết theo mẫu bán lẻ mới
+Trang /trang-phuc/[slug] dùng nền trắng, khung tối đa 1600px. Desktop: dải thumbnail dọc rộng 72px bên trái ảnh lớn, thông tin và thao tác thuê bên phải; mobile chuyển thumbnails sang hàng ngang. Bỏ các khung viền đỏ, dùng đường phân cách trung tính #e6e2de. Đỏ rượu chỉ nhấn giá và CTA. Lịch chọn khoảng ngày mở dưới nút Từ ngày–Đến ngày, có Hủy/Áp dụng; chỉ Áp dụng mới cập nhật ngày thuê. Form thông tin riêng phía dưới. Không có giá hãng, giá gạch ngang, khuyến mại 6 giờ hay thuê 0đ; không giả lập tồn kho, đánh giá, size chữ hoặc voucher khi dữ liệu chưa có. Quy tắc này thay thế bố cục Boutique showroom viền đỏ trước đó.

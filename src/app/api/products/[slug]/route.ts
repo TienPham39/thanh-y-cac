@@ -1,5 +1,4 @@
-import { getPrisma } from "@/lib/prisma";
-import { serializeProduct } from "@/lib/catalog";
+import { getProductBySlug } from "@/lib/catalog";
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ slug: string }> },
@@ -11,11 +10,9 @@ export async function GET(
       { status: 404 },
     );
   try {
-    const product = await getPrisma().costumeProduct.findFirst({
-      where: { slug, published: true },
-    });
+    const product = await getProductBySlug(slug);
     return product
-      ? Response.json({ data: serializeProduct(product) })
+      ? Response.json({ data: product })
       : Response.json(
           {
             error: { code: "NOT_FOUND", message: "Không tìm thấy trang phục." },

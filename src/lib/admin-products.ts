@@ -4,16 +4,17 @@ export type AdminProduct = {
   images: string[]; tags: string; badge: string; collection: string;
   price: number; extraDay: number; deposit: number; accessoryFee: number; offer: string;
   minHeight: number; maxHeight: number; minWeight: number; maxWeight: number;
-  fitNote: string; material: string; accessories: string; components: string;
+  fitNote: string; material: string; accessories: string; components: string; componentImages: string[];
   cleaning: string; rentalPolicy: string; damagePolicy: string;
   published: boolean; featured: boolean; onlineBooking: boolean; showLikes: boolean;
   rentalCount: number; likes: number; rating: number; reviewCount: number;
   calendar: Record<string, string>;
 };
 export const categories = ["Cung đình", "Tiên hiệp", "Cổ phục", "Hỷ phục", "Dân Quốc", "Kiếm hiệp"];
-export const statuses = ["Sẵn sàng", "Đang được thuê", "Cần bảo trì"];
+export const statuses = ["Sẵn sàng", "Cần đặt trước", "Cần bảo trì"];
+export const badges = ["Nổi bật", "Mẫu mới", "Được yêu thích"] as const;
 export function blankProduct(): AdminProduct {
-  return { id: crypto.randomUUID(), code: "", slug: "", name: "", category: categories[0], status: statuses[0], gender: "Nữ", description: "", details: "", images: [], tags: "", badge: "", collection: "", price: 0, extraDay: 0, deposit: 0, accessoryFee: 0, offer: "", minHeight: 155, maxHeight: 172, minWeight: 45, maxWeight: 65, fitNote: "", material: "", accessories: "", components: "", cleaning: "", rentalPolicy: "", damagePolicy: "", published: false, featured: false, onlineBooking: false, showLikes: true, rentalCount: 0, likes: 0, rating: 0, reviewCount: 0, calendar: {} };
+  return { id: crypto.randomUUID(), code: "", slug: "", name: "", category: categories[0], status: statuses[0], gender: "Nữ", description: "", details: "", images: [], tags: "", badge: "", collection: "", price: 0, extraDay: 0, deposit: 0, accessoryFee: 0, offer: "", minHeight: 155, maxHeight: 172, minWeight: 45, maxWeight: 65, fitNote: "", material: "", accessories: "", components: "", componentImages: [], cleaning: "", rentalPolicy: "", damagePolicy: "", published: false, featured: false, onlineBooking: false, showLikes: true, rentalCount: 0, likes: 0, rating: 0, reviewCount: 0, calendar: {} };
 }
 export function sampleProducts(): AdminProduct[] {
   return ["Phượng Cầu Hoàng - Đại Triều Cung Phục Nữ", "Lam Sắc Cửu Vĩ Tiên Nhu", "Thúy Trúc Minh Triều Phi Phong", "Phượng Hoàng Vũ Phi Hỷ Phục", "Bích Ngọc Dân Quốc Kỳ Bào", "Nguyệt Hạ Độc Hành Đạo Bào"].map((name, i) => ({

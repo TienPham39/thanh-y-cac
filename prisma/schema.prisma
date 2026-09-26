@@ -14,6 +14,35 @@ model AppSetting {
   updatedAt DateTime @updatedAt
 }
 
+model RentalRequest {
+  id String @id @db.VarChar(36)
+  productSlug String @db.VarChar(100)
+  productCode String @db.VarChar(40)
+  productName String @db.VarChar(191)
+  name String @db.VarChar(120)
+  phone String @db.VarChar(20)
+  start String @db.VarChar(10)
+  end String @db.VarChar(10)
+  height Int?
+  weight Int?
+  note String @db.Text
+  readAt DateTime?
+  status String @default("pending") @db.VarChar(20)
+  depositConfirmedAt DateTime?
+  reservedDays RentalReservedDay[]
+  createdAt DateTime @default(now())
+  @@index([readAt, createdAt])
+}
+
+model RentalReservedDay {
+  productSlug String @db.VarChar(100)
+  day String @db.VarChar(10)
+  requestId String @db.VarChar(36)
+  request RentalRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  @@id([productSlug, day])
+  @@index([requestId])
+}
+
 model ProductCategory {
   slug String @id @db.VarChar(80)
   name String @db.VarChar(191)
@@ -27,6 +56,7 @@ model CostumeProduct {
   name String @db.VarChar(191)
   description String @db.Text
   image String @db.VarChar(500)
+  images Json?
   price Int
   categorySlug String @db.VarChar(80)
   category ProductCategory @relation(fields: [categorySlug], references: [slug])

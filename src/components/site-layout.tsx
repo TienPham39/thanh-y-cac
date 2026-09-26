@@ -101,7 +101,7 @@ export default function SiteLayout({
               src="/images/logo2.png"
               width={220}
               height={74}
-              className="!w-[210px] max-[1200px]:!w-[180px] max-[760px]:!w-[160px]"
+              className="!h-auto !w-[210px] max-[1200px]:!w-[180px] max-[760px]:!w-[160px]"
               alt="Thanh Y Các"
               priority
             />
@@ -187,24 +187,6 @@ export default function SiteLayout({
               alt=""
             />
             <button
-              className="icon-button"
-              aria-label={`Yêu thích (${favorites.length})`}
-              onClick={() => setPanel({ kind: "favorites" })}
-            >
-              <Icon name="heart" />
-              {favorites.length > 0 && (
-                <span className="count">{favorites.length}</span>
-              )}
-            </button>
-            <button
-              className="icon-button"
-              aria-label={`Giỏ trang phục (${cart.length})`}
-              onClick={() => setPanel({ kind: "cart" })}
-            >
-              <Icon name="cart" />
-              {cart.length > 0 && <span className="count">{cart.length}</span>}
-            </button>
-            <button
               className="button button-primary header-booking font-['Inter'] !border-[#B88632]"
               onClick={() => setPanel({ kind: "booking" })}
             >
@@ -233,6 +215,7 @@ export default function SiteLayout({
                 alt="Thanh Y Các"
                 width={190}
                 height={64}
+                className="h-auto"
               />
             </Link>
             <p>

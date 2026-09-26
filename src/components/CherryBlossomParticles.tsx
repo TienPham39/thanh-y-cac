@@ -29,15 +29,17 @@ const options: ISourceOptions = {
     move: {
       enable: true,
       direction: "bottom",
-      speed: { min: 0.45, max: 0.95 },
-      drift: { min: -0.2, max: 0.2 },
+      speed: { min: 0.14, max: 0.32 },
+      // tsParticles integrates drift into velocity every frame, so a non-zero
+      // value accelerates petals the longer the canvas stays mounted.
+      drift: 0,
       straight: false,
       outModes: { default: "out" },
     },
     rotate: {
       value: { min: 0, max: 360 },
       direction: "random",
-      animation: { enable: true, speed: { min: 2, max: 5 }, sync: false },
+      animation: { enable: true, speed: { min: 0.5, max: 1.4 }, sync: false },
     },
     links: { enable: false },
     collisions: { enable: false },
