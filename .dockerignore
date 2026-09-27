@@ -1,5 +1,11 @@
 node_modules
 .next
+.next-dev
+dist
+out
+.directadmin-build-*
+.php-test-data
+tyc-private
 .git
 .env*
 *.log

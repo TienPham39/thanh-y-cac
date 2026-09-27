@@ -1,86 +1,75 @@
 # Thanh Y Các
 
-Bộ khung Next.js 15, React 19, App Router, TypeScript, Tailwind CSS 3, Node.js 22, MySQL 8.4, Prisma ORM 6, Redis 7.4 và npm. Trang chủ giới thiệu cổ phục được dựng theo thiết kế trong `public/images/pages`, hỗ trợ desktop và mobile.
+Frontend Next.js 15 / React 19 xuất tĩnh, API PHP 8.1+ và MariaDB 10.6+ / MySQL 8.
+Node.js 22 chỉ cần để phát triển và build frontend. Hosting không chạy Node, Prisma hoặc Redis.
 
-## Trang chủ
+## Triển khai DirectAdmin
 
-- `src/components/home-page.tsx`: header, carousel, danh mục, quy trình thuê, liên hệ và footer.
-- `src/lib/home-data.ts`: bốn mẫu giới thiệu và nội dung quy trình theo ảnh thiết kế. Chưa lấy dữ liệu kho hàng từ MySQL.
-- Có lọc danh mục, xem thông tin, yêu thích và chọn trang phục trong phiên xem trang; tải lại trang sẽ xóa lựa chọn. Chưa tạo đơn thuê hoặc nhận thanh toán.
-- Đặt lịch qua điện thoại/Zalo **0779 312 303**; phòng thử **583/66 đường 30 tháng 4, TP. Cần Thơ**.
-- Blogs và danh mục đầy đủ chưa được xây dựng; các nút tương ứng hiển thị thông tin rõ ràng, không dẫn sang trang lỗi.
-- Ảnh sản phẩm đang dùng logo như bản mẫu. Khi có ảnh và danh mục thật, thay dữ liệu trong `home-data.ts` và component thẻ sản phẩm.
-
-## Chạy toàn bộ bằng Docker
-
-Yêu cầu Docker Desktop đang chạy (Linux containers), Docker Compose v2.
-
-```powershell
-Copy-Item .env.example .env
-docker compose up -d --build
-```
-
-Trên macOS/Linux dùng `cp .env.example .env`. Không ghi đè `.env` nếu đã cấu hình.
-
-Mở http://localhost:3000. Compose tự chờ MySQL/Redis sẵn sàng và chạy `prisma migrate deploy` trước khi khởi động app. Image ứng dụng dùng standalone output và chạy bằng user `node`.
+Xem [hướng dẫn PHP](docs/deploy-directadmin-php.md) và [CI/CD](docs/auto-deploy-directadmin.md).
+Trước bản chuyển đổi này: sao lưu database, import `directadmin/migrations/001-php-api.sql`,
+và tạo cấu hình admin trong thư mục `tyc-private` cạnh `public_html`.
+Không tự chạy migration production khi push; cần hoàn tất migration trước khi deploy code.
 
 ```sh
-docker compose ps -a
-docker compose logs --tail=100 app migrate
-docker compose down
-```
-
-`down` giữ dữ liệu MySQL trong named volume. Redis chỉ dùng làm cache, không lưu bền vững. Không dùng `down -v` nếu cần giữ database.
-
-## Phát triển với npm
-
-Yêu cầu Node.js 22 và npm. Dừng app Docker nếu cổng 3000 đang được sử dụng.
-
-```sh
-docker compose stop app
-docker compose -f compose.yaml -f compose.dev.yaml up -d mysql redis
 npm ci
-npm run db:generate
-npm run db:deploy
+npm run build:directadmin
+```
+
+Upload nội dung `dist/`, gồm các file ẩn. Giữ lại mật khẩu DB, thư mục riêng và ảnh upload.
+Frontend cùng origin với PHP; không cần CORS. Chi tiết sản phẩm dùng `/chi-tiet-trang-phuc/?slug=...`.
+
+## Phát triển local
+
+Cần Node 22, PHP 8.1+ với `pdo_mysql`, MySQL/MariaDB. Import `directadmin/database.sql`
+vào database local mới rồi import `directadmin/migrations/001-php-api.sql`.
+Lệnh `npm run dev` tự đọc `.env`: đặt DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD,
+TYC_PRIVATE_DIR (đường dẫn tuyệt đối), APP_ORIGIN=http://localhost:3000 và APP_ENV=development
+trong `.env` hoặc môi trường. DATABASE_URL cũ cũng được chuyển sang cấu hình PHP
+nếu chưa có các biến DB_* tương ứng. Đặt ADMIN_EMAIL và ADMIN_PASSWORD_HASH
+(hash PHP), hoặc dùng config.php riêng như hướng dẫn deploy.
+
+Chạy một lệnh để khởi động PHP và frontend cùng nhau:
+
+```sh
 npm run dev
 ```
 
-`.env.example` có URL localhost dành cho chế độ này. Docker tự thay hostname bằng `mysql` và `redis` trong mạng nội bộ. Các cổng database/cache của file dev chỉ bind localhost.
-
-## Database
-
-`prisma/schema.prisma` hiện có bảng cấu hình `AppSetting`. Khi thêm model:
-
-```sh
-npm run db:migrate -- --name ten_thay_doi
-npm run db:generate
-```
-
-`migrate dev` cần quyền tạo shadow database; tài khoản MySQL mặc định chỉ có quyền trên database ứng dụng. Hãy cấp tài khoản phát triển phù hợp hoặc cấu hình shadow database riêng trước khi tạo migration. Chạy migration đã có bằng `db:deploy` không cần quyền này. Commit thư mục migration cùng source; không chạy `migrate dev` trên production.
+Mở http://localhost:3000. Next dev chuyển `/api/*` và `/uploads/*` tới PHP cổng 8787.
+Lệnh sẽ báo lỗi nếu cổng PHP đã bị chiếm, tránh kết nối nhầm Apache khác.
+Nếu muốn chạy riêng, dùng `npm run dev:api` và `npm run dev:web` ở hai terminal.
+Nếu dùng hostname/cổng khác, APP_ORIGIN phải khớp chính xác origin trình duyệt.
+`npm start` phục vụ bản đã build bằng PHP local; đặt APP_ORIGIN=http://127.0.0.1:8080.
+PHP development server chỉ dùng local; production dùng Apache/PHP trên hosting.
 
 ## Kiểm tra
 
 ```sh
+npm test
 npm run lint
 npm run typecheck
-npm run build
-docker compose config --quiet
+npm run build:directadmin
+npm run test:php
 ```
 
-- `GET /api/health`: liveness, trả 200 khi web server hoạt động.
-- `GET /api/ready`: truy vấn MySQL qua Prisma và ping Redis; trả 200 khi cả hai hoạt động, 503 khi chưa sẵn sàng. Không công khai lỗi hay thông tin kết nối.
-- `src/lib/prisma.ts`: Prisma Client dùng chung trong tiến trình.
-- `src/lib/redis.ts`: tạo Redis client; gọi `connect()` trước khi dùng và `disconnect()` trong `finally`.
+`test:php` cần DB_HOST/DB_PORT/DB_USER/DB_PASSWORD trỏ tới máy chủ database test;
+tài khoản phải có CREATE/DROP DATABASE. Test chỉ tạo/xóa database ngẫu nhiên `tyc_test_*`,
+kiểm tra migration lặp lại, auth/CSRF, upload, CRUD, idempotency và xác nhận cọc đồng thời.
+CI chạy PHP 8.1 + MariaDB 10.11. Không chạy test bằng tài khoản production.
 
-## Cấu hình triển khai
+Để kiểm tra rewrite/quyền file trên Apache, đặt PHP_SMOKE_BASE_URL trỏ tới website
+cần kiểm tra rồi chạy `node scripts/test-php-deployment.mjs` (chỉ đọc dữ liệu).
 
-Mật khẩu mẫu chỉ dành cho máy local. Thay mật khẩu trong `.env` trước khi đưa lên server; dùng ký tự URL-safe cho MYSQL_PASSWORD vì Compose đưa giá trị này vào DATABASE_URL. Không commit `.env`. Thay mật khẩu env sau khi tạo volume không tự đổi mật khẩu tài khoản MySQL đã tồn tại.
+## Docker local (tùy chọn)
 
-App mặc định bind `127.0.0.1:3000`, phù hợp truy cập local hoặc reverse proxy trên host. Khi triển khai công khai cần cấu hình domain, HTTPS, reverse proxy và backup MySQL. Docker không publish cổng MySQL/Redis trừ khi dùng file dev.
+`docker compose --env-file .env.example up -d --build` dùng PHP/Apache và MySQL,
+giữ volume `mysql_data` cũ. Tạo trước `tyc-private/config.php` và cho user Apache
+quyền đọc/ghi thư mục này. Không dùng `down -v` nếu cần giữ dữ liệu.
+Service migrate tự bootstrap dữ liệu mẫu chỉ khi chưa có bảng sản phẩm;
+database có sẵn chỉ chạy migration cộng thêm. Đổi mật khẩu mẫu trước khi dùng ngoài máy local.
 
-Nguồn tham khảo: [Next.js self-hosting](https://nextjs.org/docs/15/app/guides/self-hosting), [Prisma ORM 6](https://docs.prisma.io/docs/orm/v6), [Docker Compose](https://docs.docker.com/compose/).
-# Deploy toàn bộ lên DirectAdmin
+## Mã API
 
-Chạy `npm run build:directadmin` để tạo frontend tĩnh và PHP API trong `dist/`. Xem [hướng dẫn DirectAdmin + PHP](docs/deploy-directadmin-php.md) để import MariaDB, điền mật khẩu an toàn, upload ZIP và kiểm tra website. Phương án Vercel cũ vẫn được ghi riêng trong `docs/deploy-directadmin-vercel.md` nếu cần dùng lại.
-
-Để tự động build và cập nhật DirectAdmin khi push lên `main`, xem [hướng dẫn GitHub Actions](docs/auto-deploy-directadmin.md).
+Mã PHP ở `directadmin/api`; xem [hợp đồng API](docs/catalog-api.md).
+`/api/health` kiểm tra PHP; `/api/ready` kiểm tra kết nối, schema và InnoDB.
+Session admin hết hạn sau 8 giờ. Xác nhận cọc mới giữ ngày thuê; khóa cả ngày nhận và trả.
+Các file `prisma/` được giữ làm lịch sử schema, không dùng để chạy hay migrate ứng dụng.

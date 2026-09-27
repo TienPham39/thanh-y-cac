@@ -16,6 +16,16 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: local-ci-test-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s --health-timeout=5s --health-retries=5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,8 +34,21 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Generate Prisma client for type checking
-        run: npm run db:generate
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: pdo_mysql, mbstring, fileinfo
+      - name: Check PHP syntax
+        run: find directadmin scripts -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: PHP API integration tests
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: local-ci-test-password
+        run: npm run test:php
+      - name: Frontend tests
+        run: npm test
       - name: Lint
         run: npm run lint
       - name: Type check
@@ -35,6 +58,7 @@ jobs:
       - name: Check deploy files
         run: |
           test -f dist/index.html
+          test -f dist/chi-tiet-trang-phuc/index.html
           test -f dist/.htaccess
           test -f dist/api/index.php
           test -f dist/api/.htaccess

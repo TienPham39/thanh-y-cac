@@ -8,7 +8,7 @@ const policies: { number: string; icon: IconName; title: string; text: string; n
 
 export default function ProductPolicies() {
   return (
-    <section className="mt-10 w-full border-y border-[#e6e2de] bg-[#f7f6f4] px-4 py-10 sm:px-8 lg:px-6 lg:py-6">
+    <section className="relative z-[2] mt-10 w-full border-y border-[#e6e2de] bg-[#f7f6f4] px-4 py-12 sm:px-8 lg:px-6">
       <div className="mx-auto w-full max-w-[1120px]">
       <div className="mb-7 text-center lg:mb-5">
         <p className="font-['Inter'] text-xs font-semibold tracking-[0.2em] text-[#9a6d16]">QUY TẮC THANH Y CÁC</p>

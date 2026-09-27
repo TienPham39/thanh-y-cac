@@ -5,6 +5,7 @@ import { Icon } from "../icon";
 import { paginationItems } from "@/lib/admin-pagination";
 import AdminShell, { buttonStyle } from "./admin-shell";
 type Booking = {
+  priceSnapshot?: { total: number; deposit: number; remaining: number; days: number; price: number; extraDay: number; accessoryFee: number } | null;
   id: string;
   productCode: string;
   productName: string;
@@ -17,8 +18,9 @@ type Booking = {
   note: string;
   readAt: string | null;
   createdAt: string;
-  status: "pending" | "confirmed" | "cancelled";
+  status: "pending" | "confirmed" | "cancelled" | "completed";
   depositConfirmedAt: string | null;
+  returnedAt?: string | null;
 };
 export default function AdminBookings() {
   const [requestId, setRequestId] = useState("");
@@ -87,10 +89,10 @@ export default function AdminBookings() {
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<{
     item: Booking;
-    action: "confirm" | "cancel";
+    action: "confirm" | "cancel" | "return";
   } | null>(null);
   const [confirmationError, setConfirmationError] = useState("");
-  async function updateStatus(item: Booking, action: "confirm" | "cancel") {
+  async function updateStatus(item: Booking, action: "confirm" | "cancel" | "return") {
     if (busy) return;
     setBusy(item.id);
     setConfirmationError("");
@@ -107,7 +109,8 @@ export default function AdminBookings() {
           row.id === item.id
             ? {
                 ...row,
-                status: action === "confirm" ? "confirmed" : "cancelled",
+                status: action === "confirm" ? "confirmed" : action === "return" ? "completed" : "cancelled",
+                returnedAt: result.data?.returnedAt ?? row.returnedAt,
                 readAt: row.readAt ?? new Date().toISOString(),
               }
             : row,
@@ -129,22 +132,22 @@ export default function AdminBookings() {
         title={
           confirmation?.action === "confirm"
             ? "Xác nhận đã nhận cọc?"
-            : "Hủy yêu cầu thuê?"
+            : confirmation?.action === "return" ? "Xác nhận đã nhận lại đồ?" : "Hủy yêu cầu thuê?"
         }
         description={
           confirmation
             ? confirmation.action === "confirm"
               ? `Xác nhận đã nhận cọc cho ${confirmation.item.productCode} của ${confirmation.item.name}. Hệ thống sẽ giữ lịch từ ${date(confirmation.item.start)} đến ${date(confirmation.item.end)}, bao gồm cả ngày trả.`
-              : `Hủy yêu cầu thuê ${confirmation.item.productCode} của ${confirmation.item.name} và giải phóng lịch. Việc hoàn cọc cần được xử lý riêng.`
+              : confirmation.action === "return" ? "Hoàn tất đơn và mở lại lịch còn lại để bộ trang phục có thể cho thuê ngay." : `Hủy yêu cầu thuê ${confirmation.item.productCode} của ${confirmation.item.name} và giải phóng lịch. Việc hoàn cọc cần được xử lý riêng.`
             : ""
         }
         confirmLabel={
           confirmation?.action === "confirm"
             ? "Xác nhận cọc & giữ lịch"
-            : "Hủy yêu cầu"
+            : confirmation?.action === "return" ? "Đã nhận lại đồ" : "Hủy yêu cầu"
         }
         cancelLabel="Quay lại"
-        tone={confirmation?.action === "confirm" ? "primary" : "danger"}
+        tone={confirmation?.action !== "cancel" ? "primary" : "danger"}
         busy={busy !== null}
         error={confirmationError}
         onCancel={() => {
@@ -228,6 +231,11 @@ export default function AdminBookings() {
                 </div>
               </dl>
               <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-stone-100 pt-4">
+                {item.priceSnapshot ? <div className="w-full rounded-md bg-stone-50 p-3 text-sm">
+                  <p>Tổng tiền thuê: <strong>{item.priceSnapshot.total.toLocaleString("vi-VN")}đ</strong> · {item.priceSnapshot.days} ngày</p>
+                  <p>{item.depositConfirmedAt ? "Cọc đã xác nhận" : "Cọc giữ lịch dự kiến"}: {item.priceSnapshot.deposit.toLocaleString("vi-VN")}đ</p>
+                  <p>{item.depositConfirmedAt ? "Còn thanh toán" : "Còn thanh toán sau khi cọc"}: {item.priceSnapshot.remaining.toLocaleString("vi-VN")}đ</p>
+                </div> : <p className="w-full text-xs text-stone-500">Đơn cũ chưa có bảng giá lưu. Liên hệ khách để đối chiếu.</p>}
                 <span
                   className={`inline-flex rounded-md px-2.5 py-1 text-sm font-semibold ${item.status === "confirmed" ? "bg-emerald-100 text-emerald-800" : item.status === "cancelled" ? "bg-red-100 text-red-800" : "bg-stone-100 text-stone-700"}`}
                 >
@@ -235,7 +243,7 @@ export default function AdminBookings() {
                     ? "Đã nhận cọc · Đã khóa lịch"
                     : item.status === "cancelled"
                       ? "Đã hủy"
-                      : "Chờ xác nhận cọc"}
+                      : item.status === "completed" ? "Đã nhận lại đồ" : "Chờ xác nhận cọc"}
                 </span>
                 {item.status === "pending" && (
                   <button
@@ -249,7 +257,9 @@ export default function AdminBookings() {
                     Xác nhận đã nhận cọc & giữ lịch
                   </button>
                 )}
-                {item.status !== "cancelled" && (
+                {item.returnedAt && <span className="text-xs text-stone-500">Nhận lại: {new Date(item.returnedAt).toLocaleString("vi-VN")}</span>}
+                {item.status === "confirmed" && <button disabled={busy !== null} className={`${buttonStyle} !bg-[#781216] !text-white`} onClick={() => { setConfirmationError(""); setConfirmation({ item, action: "return" }); }}>Đã nhận lại đồ</button>}
+                {(item.status === "pending" || item.status === "confirmed") && (
                   <button
                     disabled={busy !== null}
                     className={buttonStyle}

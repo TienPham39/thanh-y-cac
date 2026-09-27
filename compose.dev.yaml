@@ -1,10 +1,7 @@
-# Overlay for npm run dev on the host, with only infrastructure in Docker.
+# Overlay for frontend/PHP development on the host.
 services:
   app:
     profiles: ["production"]
   mysql:
     ports:
       - "127.0.0.1:3307:3306"
-  redis:
-    ports:
-      - "127.0.0.1:6379:6379"

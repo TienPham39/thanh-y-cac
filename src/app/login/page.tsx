@@ -84,7 +84,7 @@ export default function LoginPage() {
                   autoComplete="username"
                   defaultValue="admin@thanhycac.com"
                   placeholder="Nhập SĐT hoặc Email..."
-                  className="mt-3 h-11 w-full appearance-none rounded border-2 border-[#ead7d0] bg-transparent px-4 !outline-[0px] !outline-offset-0 focus:border-[#80151c] focus:!shadow-none"
+                  className="mt-3 h-11 w-full appearance-none rounded border-2 border-[#ead7d0] bg-white px-4 !outline-[0px] !outline-offset-0 focus:border-[#80151c] focus:!shadow-none"
                 />
               </label>
               <label className="block text-sm">
@@ -97,7 +97,7 @@ export default function LoginPage() {
                     autoComplete="current-password"
                     type={visible ? "text" : "password"}
                     placeholder="••••••••"
-                    className="h-11 w-full appearance-none rounded border-2 border-[#ead7d0] bg-transparent px-4 pr-14 !outline-[0px] !outline-offset-0 focus:border-[#80151c] focus:!shadow-none"
+                    className="h-11 w-full appearance-none rounded border-2 border-[#ead7d0] bg-white px-4 pr-14 !outline-[0px] !outline-offset-0 focus:border-[#80151c] focus:!shadow-none"
                   />
                   <button
                     type="button"

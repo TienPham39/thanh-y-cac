@@ -51,7 +51,7 @@ export default function ProductBookingPanel({ product, range, onReset }: { produ
           <label className="font-['Inter'] text-sm font-medium sm:col-span-2">Ghi chú đặc biệt<textarea className={`${inputClass} min-h-24 py-3`} name="note" maxLength={2000} placeholder="Ví dụ: cần bóp eo, phối trâm cài hoặc tư vấn concept…" /></label>
         </div>
         <p className="mt-5 text-xs leading-5 text-[#765f5a]">Yêu cầu được gửi đến cửa hàng để xử lý. Trang phục chỉ được giữ lịch sau khi quản trị viên xác nhận đã nhận cọc.</p>
-        <RentalPriceSummary range={range} price={product.price} />
+        <RentalPriceSummary range={range} {...product} />
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <button type="submit" disabled={saving} className="disabled:opacity-50 flex min-h-12 items-center justify-center gap-2 rounded-lg border border-[#781216] bg-[#781216] px-5 font-['Inter'] text-sm font-semibold text-white transition hover:bg-[#5e1012]"><Icon name="calendar" />{saving ? "Đang gửi yêu cầu…" : "Gửi yêu cầu đặt thuê"}</button>
           <a href="https://zalo.me/0779312303" target="_blank" rel="noreferrer" className="flex min-h-12 items-center justify-center gap-2 rounded-lg border border-[#781216]/30 px-5 text-sm font-semibold text-[#781216] transition hover:bg-[#781216]/5"><Icon name="chat" />Tư vấn qua Zalo</a>
@@ -60,4 +60,3 @@ export default function ProductBookingPanel({ product, range, onReset }: { produ
     </>
   );
 }
-

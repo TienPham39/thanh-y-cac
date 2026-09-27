@@ -8,8 +8,8 @@ import { overlapsReservation, type ReservedRange } from "@/lib/rental-reservatio
 import { RentalPriceSummary } from "./rental-price-summary";
 import { Icon } from "./icon";
 
-export function RentalDatePopover({ range, onChange, price, productSlug }: {
-  range: RentalRange; onChange: (range: RentalRange) => void; price: number; productSlug: string;
+export function RentalDatePopover({ range, onChange, price, extraDay, deposit, accessoryFee, productSlug }: {
+  range: RentalRange; onChange: (range: RentalRange) => void; price: number; extraDay?: number | null; deposit?: number | null; accessoryFee?: number | null; productSlug: string;
 }) {
   const [reserved, setReserved] = useState<ReservedRange[]>([]);
   const [availability, setAvailability] = useState<"loading"|"ready"|"error">("loading");
@@ -49,7 +49,7 @@ export function RentalDatePopover({ range, onChange, price, productSlug }: {
         <span>{range.start ? formatRentalDate(range.start) : "Từ ngày"} <span className="mx-2 text-[#827a74]">—</span> {range.end ? formatRentalDate(range.end) : "Đến ngày"}</span><Icon name="calendar" className="!h-4 !w-4 shrink-0" />
       </button>
     </div>
-    <RentalPriceSummary range={range} price={price} />
+    <RentalPriceSummary range={range} price={price} extraDay={extraDay} deposit={deposit} accessoryFee={accessoryFee} />
     <div className="mt-3 text-xs leading-5" aria-live="polite">
       {availability==="loading" ? <p>Đang tải lịch đã đặt…</p> : availability==="error" ? <p className="text-red-800">Chưa tải được lịch. Vui lòng thử lại sau hoặc liên hệ cửa hàng.</p> : reserved.length ? <ul className="max-h-28 overflow-y-auto text-[#781216]">{reserved.map(item=><li key={item.start+item.end}>Đã được đặt từ {formatRentalDate(item.start)} đến {formatRentalDate(item.end)}</li>)}</ul> : <p className="text-stone-600">Chưa có lịch đã xác nhận cọc.</p>}
       {overlapsReservation(range.start,range.end,reserved)&&<p className="font-medium text-red-800">Khoảng bạn chọn vừa được đặt. Vui lòng chọn lại ngày.</p>}
@@ -58,7 +58,7 @@ export function RentalDatePopover({ range, onChange, price, productSlug }: {
       className="absolute left-0 right-0 top-full z-30 mt-2 bg-white p-4 shadow-[0_8px_32px_rgba(35,25,20,0.16)] sm:left-auto sm:w-[340px] lg:fixed lg:left-auto lg:right-6 lg:top-1/2 lg:mt-0 lg:max-h-[calc(100dvh-32px)] lg:-translate-y-1/2 lg:overflow-y-auto lg:overscroll-contain">
       {availability === "ready" && <RentalDatePicker value={draft} today={vietnamToday()} onChange={setDraft} reserved={reserved} />}
       <p className="mt-2 text-xs leading-5 text-[#68635f]">Ngày gạch ngang đã được đặt. Khóa cả ngày nhận và ngày trả; yêu cầu chưa xác nhận cọc chưa giữ lịch.</p>
-      <RentalPriceSummary range={draft} price={price} />
+      <RentalPriceSummary range={draft} price={price} extraDay={extraDay} deposit={deposit} accessoryFee={accessoryFee} />
       <div className="mt-3 flex justify-end gap-3">
         <button type="button" onClick={close} className="min-h-10 rounded-md px-4 text-sm">Hủy</button>
         <button type="button" disabled={availability !== "ready" || !rentalDayCount(draft.start, draft.end) || overlapsReservation(draft.start,draft.end,reserved)} onClick={() => { onChange(draft); close(); }} className="min-h-10 rounded-md bg-[#80151c] px-6 text-sm font-semibold text-white hover:bg-[#590008] disabled:cursor-not-allowed disabled:opacity-40">Áp dụng</button>

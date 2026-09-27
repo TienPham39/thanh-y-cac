@@ -6,6 +6,9 @@ export type CatalogProduct = {
   image: string;
   images?: string[];
   price: number;
+  extraDay?: number | null;
+  deposit?: number | null;
+  accessoryFee?: number | null;
   categorySlug: string;
   gender: string;
   availability: string;

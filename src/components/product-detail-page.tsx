@@ -5,6 +5,7 @@
  * FIRST VIEWPORT: Gallery on the left, name/price/date selector and actions on the right.
  * FORM: User-supplied retail product layout without brand price or promotional claims. */
 import { useState } from "react";
+import { productUrl } from "@/lib/product-url";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { CatalogProduct } from "@/lib/catalog-types";
@@ -73,7 +74,7 @@ export default function ProductDetailPage({
           </span>
         </nav>
       </div>
-      <div className="relative z-[2] mx-auto max-w-[1600px] px-4 pb-16 pt-6 sm:px-6 lg:pt-6 2xl:pt-8">
+      <div className="relative z-[2] mx-auto max-w-[1600px] px-4 pt-6 sm:px-6 lg:pt-6 2xl:pt-8">
         <section
           aria-label="Thông tin trang phục"
           className="grid items-start gap-8 lg:grid-cols-[1.1fr_1fr] lg:gap-8 2xl:gap-12 2xl:grid-cols-[768px_minmax(0,1fr)]"
@@ -107,6 +108,9 @@ export default function ProductDetailPage({
               range={range}
               onChange={setRange}
               price={product.price}
+              extraDay={product.extraDay}
+              deposit={product.deposit}
+              accessoryFee={product.accessoryFee}
             />
             <dl className="mt-6 grid grid-cols-[110px_1fr] gap-x-4 gap-y-4 lg:gap-y-3 2xl:gap-y-4 text-sm sm:grid-cols-[130px_1fr]">
               <dt className="text-[#68635f]">Chiều cao</dt>
@@ -120,7 +124,7 @@ export default function ProductDetailPage({
               <dt className="text-[#68635f]">Phụ kiện</dt>
               <dd className="leading-6">{included.join(" · ")}</dd>
               <dt className="text-[#68635f]">Đặt cọc</dt>
-              <dd>Xác nhận tại phòng thử</dd>
+              <dd>{formatPrice(product.deposit ?? 0)} — trừ vào tiền thuê</dd>
             </dl>
             <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:mt-5 2xl:mt-7">
               <a
@@ -162,7 +166,9 @@ export default function ProductDetailPage({
           range={range}
           onReset={() => setRange({ start: "", end: "" })}
         />
-        <ProductPolicies />
+      </div>
+      <ProductPolicies />
+      <div className="relative z-[2] mx-auto max-w-[1600px] px-4 pb-16 sm:px-6">
         {related.length > 0 && (
           <section
             aria-labelledby="related-title"
@@ -189,7 +195,7 @@ export default function ProductDetailPage({
                   product={item}
                   favorite={favorites.includes(item.slug)}
                   onFavorite={() => toggleFavorite(item.slug)}
-                  onDetail={() => router.push("/trang-phuc/" + item.slug)}
+                  onDetail={() => router.push(productUrl(item.slug))}
                   animate={false}
                 />
               ))}

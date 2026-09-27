@@ -1,0 +1,159 @@
+import assert from 'node:assert/strict';
+import { spawn, spawnSync } from 'node:child_process';
+import { randomBytes, randomUUID } from 'node:crypto';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import net from 'node:net';
+
+// DB_USER needs CREATE/DROP DATABASE on a disposable local/CI database server.
+const privateDir = await mkdtemp(path.join(tmpdir(), 'tyc-php-test-'));
+const env = { ...process.env, DB_NAME: `tyc_test_${randomBytes(6).toString('hex')}`, TYC_PRIVATE_DIR: privateDir, APP_ENV: 'development' };
+const php = process.env.PHP_BINARY || 'php';
+function setup(action) {
+  const result = spawnSync(php, ['scripts/php-test-database.php', action], { env, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr + result.stdout);
+}
+async function port() {
+  const socket = net.createServer();
+  await new Promise(resolve => socket.listen(0, '127.0.0.1', resolve));
+  const value = socket.address().port;
+  await new Promise(resolve => socket.close(resolve));
+  return value;
+}
+const servers = [];
+try {
+  const validation = spawnSync(php, ['scripts/test-php-validation.php'], { encoding: 'utf8' });
+  assert.equal(validation.status, 0, validation.stderr + validation.stdout);
+  setup('create');
+  const ports = [await port(), await port()];
+  const base = `http://127.0.0.1:${ports[0]}`;
+  env.APP_ORIGIN = base;
+  for (const p of ports) {
+    const server = spawn(php, ['-S', `127.0.0.1:${p}`, '-t', 'public', 'scripts/php-router.php'], { env, stdio: 'ignore' });
+    servers.push(server);
+  }
+  for (const p of ports) {
+    let ready = false;
+    for (let i = 0; i < 60; i++) {
+      try { ready = (await fetch(`http://127.0.0.1:${p}/api/health`)).ok; } catch { /* wait for server */ }
+      if (ready) break;
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    assert.ok(ready, 'PHP server started');
+  }
+  let cookie = '';
+  async function request(url, method = 'GET', body, expected = 200, options = {}) {
+    const r = await fetch((options.base || base) + url, { method, headers: {
+      'Content-Type': 'application/json', Origin: options.origin ?? base, Cookie: options.anonymous ? '' : cookie,
+    }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+    const text = await r.text();
+    assert.equal(r.status, expected, `${method} ${url}: ${text}`);
+    return { body: text ? JSON.parse(text) : null, response: r };
+  }
+  await request('/api/ready');
+  await request('/api/products?sort=');
+  await request('/api/admin/products', 'GET', undefined, 401);
+  await request('/api/admin/categories', 'GET', undefined, 401);
+  await request('/api/auth/session', 'GET', undefined, 401);
+  await request('/api/products', 'POST', {}, 405);
+  await request('/api/products/availability?slug=no-such-product', 'GET', undefined, 404);
+  await request('/api/auth/session', 'POST', { identifier: 'test@example.com', password: 'wrong' }, 401);
+  const login = await request('/api/auth/session', 'POST', { identifier: 'test@example.com', password: 'local-test-password' });
+  const setCookie = login.response.headers.get('set-cookie');
+  assert.match(setCookie, /HttpOnly/i); assert.match(setCookie, /SameSite=Lax/i);
+  cookie = setCookie.split(';')[0];
+  assert.equal((await request('/api/auth/session')).body.data.email, 'test@example.com');
+  const category = { slug: 'test-category', name: 'Danh mục thử', codePrefix: 'ZZ', position: 9 };
+  await request('/api/admin/categories', 'POST', category, 403, { origin: 'https://attacker.example' });
+  await request('/api/admin/categories', 'POST', category, 201);
+  const categoryOrder = (await request('/api/admin/categories')).body.data.map(row => row.slug);
+  assert.equal(categoryOrder[0], category.slug, 'new category must be first');
+  await request('/api/admin/categories', 'PATCH', {order: [...categoryOrder].reverse()});
+  assert.deepEqual((await request('/api/admin/categories')).body.data.map(row => row.slug), [...categoryOrder].reverse());
+  await request('/api/admin/categories', 'PATCH', {order: categoryOrder.slice(1)}, 409);
+  await request('/api/admin/categories', 'PATCH', {order: [category.slug, category.slug]}, 422);
+  await request('/api/admin/categories', 'POST', {...category, slug: 'duplicate-prefix'}, 409);
+  await request('/api/admin/categories', 'PATCH', {...category, name: 'Danh mục đã sửa'});
+  assert.ok((await request('/api/product-categories')).body.data.some(row => row.name === 'Danh mục đã sửa'));
+  await request('/api/admin/categories', 'DELETE', {slug:'duong-trieu'}, 409);
+  await request('/api/admin/categories', 'DELETE', {slug:category.slug});
+  await request('/api/admin/products', 'DELETE', { codes: ['PHP-TEST'] }, 403, { origin: 'https://attacker.example' });
+  const product = {code:'PHP-TEST',slug:'php-test',name:'PHP test product',description:'Test',price:300000,category:'Cổ phục',gender:'Nữ',status:'Sẵn sàng',tags:'test',accessories:'fan',badge:'Mẫu mới',minHeight:150,maxHeight:175,minWeight:40,maxWeight:70,published:true,images:['/images/logo.png','/images/banner-1.png']};
+  await request('/api/admin/products/publication', 'PATCH', product);
+  await request('/api/admin/categories', 'POST', category, 201);
+  const categoryProduct = {...product, code:'ZZ-TEST', slug:'category-test', category:category.name};
+  await request('/api/admin/products', 'POST', categoryProduct);
+  await request('/api/admin/products', 'POST', categoryProduct, 409);
+  await request('/api/admin/categories', 'DELETE', {slug:category.slug}, 409);
+  await request('/api/admin/categories', 'PATCH', {...category, name:'Tên danh mục mới'});
+  assert.equal((await request('/api/admin/products')).body.data.find(row => row.code === 'ZZ-TEST').categoryName, 'Tên danh mục mới');
+  await request('/api/admin/products', 'DELETE', {codes:['ZZ-TEST']});
+  await request('/api/admin/categories', 'DELETE', {slug:category.slug});
+  assert.equal((await request('/api/products/php-test')).body.data.images.length, 2);
+  await request('/api/admin/products', 'PATCH', {...product,name:'Saved name'});
+  await request('/api/admin/products/publication', 'PATCH', {...product,published:false});
+  await request('/api/products/php-test','GET',undefined,404);
+  await request('/api/admin/products/publication', 'PATCH', product);
+  assert.equal((await request('/api/products/php-test')).body.data.name, 'Saved name', 'publication must not overwrite product');
+  await request('/api/admin/products', 'PATCH', {...product,images:['/uploads/../secret.php']},422);
+  const png='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jF1kAAAAASUVORK5CYII=';
+  const upload=(await request('/api/admin/uploads','POST',{image:png},201)).body.data.url;
+  const image=await fetch(base+upload);assert.equal(image.status,200);assert.equal(image.headers.get('content-type'),'image/png');
+  await request('/api/admin/uploads','POST',{image:'data:image/png;base64,PD9waHAgZXZpbA=='},422);
+  const date=new Date(Date.now()+86400000*2).toISOString().slice(0,10);
+  const rental={id:randomUUID(),productSlug:'php-test',name:'Test customer',phone:'0901234567',start:date,end:date,height:'160',weight:'50',note:''};
+  await request('/api/admin/products','PATCH',{...product,price:450000,extraDay:50000,deposit:50000,accessoryFee:0});
+  await request('/api/rental-requests','POST',rental,201);
+  const savedQuote=(await request('/api/admin/rental-requests?requestId='+rental.id)).body.data[0].priceSnapshot;
+  assert.equal(savedQuote.total,450000); assert.equal(savedQuote.remaining,400000);
+  await request('/api/admin/products','PATCH',{...product,price:600000,extraDay:70000,deposit:100000,accessoryFee:20000});
+  assert.deepEqual((await request('/api/admin/rental-requests?requestId='+rental.id)).body.data[0].priceSnapshot,savedQuote);
+  await request('/api/admin/products','PATCH',{...product,deposit:9999999},422);
+  await request('/api/rental-requests','POST',rental,201);
+  await request('/api/rental-requests','POST',{...rental,name:'Different'},409);
+  const other={...rental,id:randomUUID(),phone:'0901234568'};
+  await request('/api/rental-requests','POST',other,201);
+  const confirmations=await Promise.all([rental,other].map((row,i)=>fetch(`http://127.0.0.1:${ports[i]}/api/admin/rental-requests`,{method:'PATCH',headers:{'Content-Type':'application/json',Origin:base,Cookie:cookie},body:JSON.stringify({id:row.id,action:'confirm'})})));
+  assert.deepEqual(confirmations.map(r=>r.status).sort(),[200,409], 'concurrent confirmations cannot double book');
+  const winner=confirmations[0].status===200?rental:other;
+  assert.deepEqual((await request('/api/products/availability?slug=php-test')).body.data,[{start:date,end:date}]);
+  await request('/api/rental-requests','POST',{...rental,id:randomUUID()},409);
+  const list=(await request('/api/admin/rental-requests?page=999')).body;
+  assert.equal(list.total,2);assert.equal(list.page,1);assert.match(list.data[0].createdAt,/Z$/);
+  const rentalStatus = async () => (await request('/api/admin/products')).body.data.find(row => row.code === 'PHP-TEST').rentalStatus;
+  assert.equal(await rentalStatus(), 'rented');
+  assert.equal((await request('/api/products/php-test')).body.data.availability, 'rented');
+  assert.ok((await request('/api/products?availability=rented')).body.data.some(row => row.code === 'PHP-TEST'));
+  assert.ok(!(await request('/api/products?availability=available')).body.data.some(row => row.code === 'PHP-TEST'));
+  const laterDate = new Date(Date.now()+86400000*7).toISOString().slice(0,10);
+  const later = {...rental, id:randomUUID(), start:laterDate, end:laterDate, phone:'0901234599'};
+  await request('/api/rental-requests','POST',later,201);
+  await request('/api/admin/rental-requests','PATCH',{id:later.id,action:'return'},409);
+  await request('/api/admin/rental-requests','PATCH',{id:later.id,action:'confirm'});
+  const returned = (await request('/api/admin/rental-requests','PATCH',{id:winner.id,action:'return'})).body.data;
+  assert.equal(returned.status,'completed'); assert.match(returned.returnedAt,/Z$/);
+  assert.equal((await request('/api/admin/rental-requests','PATCH',{id:winner.id,action:'return'})).body.data.returnedAt,returned.returnedAt);
+  await request('/api/admin/rental-requests','PATCH',{id:winner.id,action:'cancel'},409);
+  assert.equal(await rentalStatus(),'rented','other confirmed booking keeps product rented');
+  assert.deepEqual((await request('/api/products/availability?slug=php-test')).body.data,[{start:laterDate,end:laterDate}]);
+  await request('/api/rental-requests','POST',{...rental,id:randomUUID(),phone:'0901234588'},201);
+  await request('/api/admin/rental-requests','PATCH',{id:later.id,action:'cancel'});
+  assert.equal(await rentalStatus(),'ready');
+  assert.equal((await request('/api/products/php-test')).body.data.availability, 'available');
+  assert.deepEqual((await request('/api/products/availability?slug=php-test')).body.data,[]);
+  await request('/api/admin/rental-requests','PATCH',{id:winner.id,action:'confirm'},409);
+  await request('/api/admin/products','DELETE',{codes:['PHP-TEST']});
+  await request('/api/products/php-test','GET',undefined,404);
+  await request('/api/auth/session','DELETE');
+  await request('/api/admin/products','GET',undefined,401);
+  for(let i=0;i<5;i++)await request('/api/auth/session','POST',{identifier:'test@example.com',password:'wrong'},401);
+  await request('/api/auth/session','POST',{identifier:'test@example.com',password:'wrong'},429);
+  console.log('PASS PHP API: migration twice, auth/CSRF/rate limit, catalog/gallery/publication, upload, rental idempotency, concurrent confirmation rollback, cancellation, logout.');
+} finally {
+  for (const server of servers) {
+    if (server.exitCode === null) { server.kill(); await new Promise(resolve => server.once('exit', resolve)); }
+  }
+  setup('drop');
+  await rm(privateDir, {recursive:true,force:true});
+}

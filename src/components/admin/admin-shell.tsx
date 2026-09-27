@@ -11,9 +11,26 @@ export const primaryStyle = "inline-flex min-h-10 items-center justify-center ga
 export const inputStyle = "mt-1.5 min-h-10 w-full rounded-md border border-[#dedee4] bg-white px-3 py-2 text-sm text-[#333541] outline-none placeholder:text-[#777b86] focus:border-[#80151c] focus:ring-1 focus:ring-[#80151c]";
 
 export default function AdminShell({ children, title }: { children: React.ReactNode; title: string }) {
-  const pathname = usePathname();
+  const pathname = usePathname().replace(/\/+$/, "") || "/";
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [session, setSession] = useState<{ email: string } | null>(null);
+  const [sessionError, setSessionError] = useState(false);
+  useEffect(() => {
+    const abort = new AbortController();
+    fetch('/api/auth/session', { cache: 'no-store', signal: abort.signal })
+      .then(async response => {
+        if (response.status === 401) {
+          window.location.replace('/login?next=' + encodeURIComponent(window.location.pathname + window.location.search));
+          return;
+        }
+        if (!response.ok) throw new Error('Session unavailable');
+        const body = await response.json();
+        setSession(body.data);
+      })
+      .catch(error => { if (error.name !== 'AbortError') setSessionError(true); });
+    return () => abort.abort();
+  }, []);
   useEffect(() => {
     if (!open) return;
     const previous = document.body.style.overflow;
@@ -31,7 +48,7 @@ export default function AdminShell({ children, title }: { children: React.ReactN
   const items: { icon: IconName; label: string; href?: string }[] = [
     { icon: "dashboard", label: "Tổng quan", href: "/admin" },
     { icon: "hanger", label: "Trang phục", href: "/admin/trang-phuc" },
-    { icon: "tag", label: "Danh mục" },
+    { icon: "tag", label: "Danh mục", href: "/admin/danh-muc" },
     { icon: "calendar", label: "Đặt lịch thuê", href: "/admin/dat-lich" },
     { icon: "users", label: "Khách hàng" },
     { icon: "book", label: "Tin tức" },
@@ -41,6 +58,7 @@ export default function AdminShell({ children, title }: { children: React.ReactN
     if (!href) return false;
     return href === "/admin" ? pathname === href : pathname.startsWith(href);
   }
+  if (!session) return <main className="p-12 text-center"><p role="status">{sessionError ? 'Chưa kiểm tra được phiên đăng nhập. Vui lòng tải lại trang.' : 'Đang kiểm tra đăng nhập…'}</p></main>;
   return <div className="min-h-screen bg-[#f8f7f7] font-['Inter'] text-[#34343e] [&_h1]:font-['Inter'] [&_h2]:font-['Inter'] [&_h3]:font-['Inter']">
     <aside className={`${open ? "flex" : "hidden"} fixed inset-y-0 left-0 z-30 w-[min(84vw,320px)] flex-col overflow-y-auto border-r border-[#ece7e8] bg-white text-[#4e484d] shadow-[12px_0_36px_rgba(52,19,23,0.16)] lg:flex lg:w-64 lg:overflow-hidden lg:shadow-[8px_0_28px_rgba(70,8,14,0.08)]`}>
       <div aria-hidden="true" className="pointer-events-none absolute -left-20 -top-24 h-64 w-64 rounded-full bg-[#80151c]/[0.035]" />

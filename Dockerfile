@@ -1,29 +1,19 @@
-FROM node:22-bookworm-slim AS base
+FROM node:22-bookworm-slim AS build
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 ENV NEXT_TELEMETRY_DISABLED=1
-
-FROM base AS deps
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
-
-FROM deps AS build
 COPY . .
-RUN npm run build
+RUN npm run build:directadmin
 
-FROM deps AS migrate
-COPY prisma ./prisma
-RUN ./node_modules/.bin/prisma generate
-USER node
-CMD ["./node_modules/.bin/prisma", "migrate", "deploy"]
+FROM php:8.3-apache AS runner
+RUN docker-php-ext-install pdo_mysql && a2enmod rewrite headers
+RUN printf '<Directory /var/www/html>\nAllowOverride All\nRequire all granted\n</Directory>\n' > /etc/apache2/conf-available/tyc.conf && a2enconf tyc
+COPY --from=build /app/dist /var/www/html
+RUN mkdir -p /var/www/tyc-private && chown www-data:www-data /var/www/tyc-private
+EXPOSE 80
 
-FROM base AS runner
-ENV NODE_ENV=production
-ENV PORT=3000
-ENV HOSTNAME=0.0.0.0
-COPY --from=build --chown=node:node /app/.next/standalone ./
-COPY --from=build --chown=node:node /app/.next/static ./.next/static
-COPY --from=build --chown=node:node /app/public ./public
-USER node
-EXPOSE 3000
-CMD ["node", "server.js"]
+FROM runner AS migrate
+COPY directadmin /app/directadmin
+COPY scripts/php-migrate.php /app/scripts/php-migrate.php
+CMD ["php", "/app/scripts/php-migrate.php", "--bootstrap"]

@@ -2,11 +2,14 @@ import { blankProduct, type AdminProduct } from "./admin-products.ts";
 import type { CatalogProduct } from "./catalog-types.ts";
 
 export type AdminCatalogRow = CatalogProduct & {
+  categoryName?: string;
+  rentalStatus?: "rented" | "ready";
   published: boolean;
   popularity: number;
 };
 
 function categoryFor(row: AdminCatalogRow) {
+  if (row.categoryName) return row.categoryName;
   if (row.categorySlug === "duong-trieu") return "Cung đình";
   if (row.categorySlug === "dan-quoc") return "Dân Quốc";
   if (row.categorySlug === "kiem-hiep")
@@ -31,8 +34,11 @@ export function mergeAdminCatalog(catalog: AdminCatalogRow[], drafts: AdminProdu
       description: row.description,
       images: row.images?.length ? row.images : [row.image, ...(draft?.images ?? []).filter(image => image !== row.image)],
       price: row.price,
+      extraDay: row.extraDay ?? draft?.extraDay ?? row.price,
+      deposit: row.deposit ?? draft?.deposit ?? 0,
+      accessoryFee: row.accessoryFee ?? draft?.accessoryFee ?? 0,
       category: categoryFor(row),
-      status: row.availability === "advance" ? "Cần đặt trước" : "Sẵn sàng",
+      status: row.rentalStatus === "rented" ? "Đang cho thuê" : "Sẵn sàng",
       gender: row.gender === "male" ? "Nam" : row.gender === "unisex" ? "Unisex" : "Nữ",
       minHeight: row.minHeight,
       maxHeight: row.maxHeight,
@@ -47,6 +53,6 @@ export function mergeAdminCatalog(catalog: AdminCatalogRow[], drafts: AdminProdu
   });
   const localDrafts = drafts
     .filter(row => !catalogCodes.has(row.code.toUpperCase()) && !row.id.startsWith("sample-"))
-    .map(row => ({ ...row, published: false }));
+    .map(row => ({ ...row, status: "Sẵn sàng", published: false }));
   return [...databaseRows, ...localDrafts];
 }

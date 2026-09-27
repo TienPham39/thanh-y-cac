@@ -4,6 +4,12 @@ Workflow `.github/workflows/deploy-directadmin.yml` kiểm tra và build khi có
 
 ## 1. Kiểm tra tài khoản FTP trong DirectAdmin
 
+Trước khi push bản chuyển đổi API PHP: sao lưu database, import
+`directadmin/migrations/001-php-api.sql` và tạo `tyc-private/config.php` cạnh
+`public_html` theo [hướng dẫn PHP](deploy-directadmin-php.md). CI không tự chạy
+migration production và không upload cấu hình admin. Build kiểm tra PHP API
+bằng database MariaDB riêng, không truy cập database hosting.
+
 1. Dùng tài khoản chính đăng nhập DirectAdmin, có quyền ghi vào `public_html` của `thanhycac.com`.
 2. Ghi lại hostname DirectAdmin, username và password. Hostname không gồm `https://` hoặc `:2222`.
 3. Xác định đường dẫn từ home của tài khoản đến `public_html`, ví dụ `domains/thanhycac.com/public_html`.

@@ -7,6 +7,8 @@ dist.zip
 .directadmin-build-*/
 .directadmin-upload/
 coverage/
+.php-test-data/
+tyc-private/
 *.tsbuildinfo
 .env*
 !.env.example

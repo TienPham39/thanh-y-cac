@@ -6,6 +6,15 @@ Kiến trúc triển khai:
 Frontend tĩnh (HTML/CSS/JS) → PHP API → MariaDB localhost
 ```
 
+Trang chi tiết trên bản DirectAdmin dùng `/chi-tiet-trang-phuc/?slug=...`
+và tải sản phẩm từ PHP API `/api/products/{slug}` trong trình duyệt.
+Toàn bộ API chạy PHP; không còn API Node.js, Prisma hay Redis trong runtime.
+Các URL cũ `/trang-phuc/{slug}` được `.htaccess` chuyển hướng sang trang tĩnh.
+Thêm sản phẩm vào database không cần build lại frontend.
+
+PHP hỗ trợ đăng nhập/session, quản trị sản phẩm, bộ ảnh, upload, lịch trống,
+gửi yêu cầu thuê, thông báo quản trị và xác nhận/hủy cọc. Node.js chỉ dùng để build.
+
 Không cần Vercel. Database dùng trực tiếp:
 
 - Database: `thanhyca6aae_tyc`
@@ -22,7 +31,12 @@ Không ghi mật khẩu database vào source hoặc gửi mật khẩu qua tin n
 3. Trong **Database Operations**, bấm **Import**.
 4. Chọn file `directadmin/database.sql` từ máy tính.
 5. Bấm Import và chờ thông báo hoàn tất.
-6. Quay lại trang database. Mục **Tables** phải hiện `3`, gồm `AppSetting`, `ProductCategory` và `CostumeProduct`.
+6. Import tiếp `directadmin/migrations/001-php-api.sql`. Với database đã có dữ liệu,
+   sao lưu rồi chỉ import migration này, không cần nạp lại dữ liệu mẫu.
+7. Database có các bảng `AppSetting`, `ProductCategory`, `CostumeProduct`,
+   `RentalRequest`, `RentalReservedDay`, `ApiRateLimit`. Migration bổ sung cột ảnh,
+   chuyển bảng giao dịch sang InnoDB và phục hồi ngày giữ đồ từ yêu cầu đã xác nhận.
+   Nếu báo trùng lịch, giải quyết các yêu cầu đã xác nhận trùng nhau trước khi deploy.
 
 Nếu nút Import báo lỗi, mở **phpMyAdmin → chọn database `thanhyca6aae_tyc` → Import**, chọn đúng file SQL, giữ charset UTF-8 và chạy. File SQL dùng `CREATE TABLE IF NOT EXISTS` và `INSERT IGNORE`, nên nhập lại không xóa dữ liệu đang có.
 
@@ -77,11 +91,37 @@ File `api/.htaccess` chặn trình duyệt tải `_config.php` và `.db-password
 
 Nếu tên database/user thực tế thay đổi, sửa hai dòng `database` và `username` trong `public_html/api/_config.php`. Với database trong ảnh hiện tại thì không cần sửa.
 
-## 5. Chọn PHP
+## 5. Cấu hình đăng nhập quản trị và thư mục riêng
+
+Tạo thư mục `domains/thanhycac.com/tyc-private` nằm **cạnh** `public_html`,
+không nằm bên trong nó. PHP cần quyền đọc/ghi thư mục này (sessions và ảnh upload).
+Nếu hosting dùng open_basedir, yêu cầu cho phép PHP truy cập thư mục riêng của domain.
+
+Tạo `config.php` tại thư mục riêng, trả về mảng PHP gồm `appOrigin`, `adminEmail`,
+`adminPasswordHash`. Mật khẩu admin phải là hash của `password_hash` PHP;
+hash scrypt từ backend Node cũ không dùng lại được. Người quản trị đăng nhập lại sau chuyển đổi.
+
+Có thể tạo file trên máy có PHP, rồi upload bằng File Manager (không cần SSH hosting):
+
+```sh
+php scripts/php-admin-config.php admin@thanhycac.com https://thanhycac.com tyc-private/config.php
+```
+
+Tạo trước thư mục `tyc-private` ở máy local. Script đọc mật khẩu từ stdin (12–72 byte),
+không truyền mật khẩu trên dòng lệnh; dùng terminal riêng vì ký tự nhập có thể hiển thị.
+Không commit file này. Đổi `appOrigin` nếu domain thật khác, bao gồm `www` nếu sử dụng.
+Tùy chọn đặt `host`, `database`, `username`, `password`, `port` trong cùng file riêng;
+file `.db-password` cũ vẫn dùng được nếu chưa đặt `password`.
+
+Ảnh mới được lưu trong `tyc-private/uploads` và phục vụ qua `/uploads/...` bằng PHP.
+Giữ nguyên ảnh cũ trong `public_html/uploads`; các bản deploy không được xóa ảnh/session/config.
+Backup cả database, thư mục riêng và ảnh cũ. Thư mục riêng không nằm trong artifact CI.
+
+## 6. Chọn PHP
 
 Trong DirectAdmin, nếu có **PHP Version Selector**, chọn PHP 8.1 trở lên cho `thanhycac.com`. PHP cần extension `PDO` và `pdo_mysql`; hosting DirectAdmin thông thường đã bật sẵn.
 
-## 6. Kiểm tra theo đúng thứ tự
+## 7. Kiểm tra theo đúng thứ tự
 
 Mở các URL sau bằng tab ẩn danh:
 
@@ -98,6 +138,9 @@ Mở các URL sau bằng tab ẩn danh:
 5. `https://thanhycac.com/trang-phuc/`
    - Thử tìm kiếm, lọc, chuyển trang và mở chi tiết sản phẩm.
 6. Mở trang chủ `https://thanhycac.com/`, kiểm tra ảnh, font và các liên kết.
+7. Mở `/admin/` ở tab ẩn danh: phải chuyển sang đăng nhập. Đăng nhập và thử
+   cập nhật sản phẩm/ảnh, gửi yêu cầu thuê, xác nhận cọc, kiểm tra ngày bị khóa rồi hủy.
+8. Sau đăng xuất, `/api/admin/products` phải trả 401. `/api/_auth.php` phải trả 403.
 
 Sau khi mọi kiểm tra đạt, xóa `dist.zip` khỏi `public_html`; website không cần file ZIP để chạy.
 

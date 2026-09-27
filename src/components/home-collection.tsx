@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api-fetch";
+import { productUrl } from "@/lib/product-url";
 import type { CatalogCategory, CatalogProduct, CatalogResponse } from "@/lib/catalog-types";
 import { formatPrice } from "@/lib/home-data";
 import { AnimatedProductCard } from "./animated-product-card";
@@ -65,17 +66,17 @@ export function HomeCollection() {
         </div>
         : products.map(product => (
           <AnimatedProductCard className="product-card" key={product.slug}>
-            <Link href={`/trang-phuc/${product.slug}`} className="product-picture" aria-label={`Xem ${product.name}`}>
+            <Link href={productUrl(product.slug)} className="product-picture" aria-label={`Xem ${product.name}`}>
               <Image src={product.image} alt={product.name} fill sizes="(max-width: 460px) 90vw, (max-width: 900px) 45vw, 23vw" />
               {product.tags[0] && <span className="accessory">{product.tags[0]}</span>}
             </Link>
             <div className="product-body">
               <p className="product-label">{categories.find(item => item.slug === product.categorySlug)?.name}</p>
-              <h3><Link href={`/trang-phuc/${product.slug}`}>{product.name}</Link></h3>
+              <h3><Link href={productUrl(product.slug)}>{product.name}</Link></h3>
               <p className="product-description">{product.description}</p>
               <div className="product-price">
                 <div><span>Giá thuê 24h</span><strong>{formatPrice(product.price)}</strong></div>
-                <Link href={`/trang-phuc/${product.slug}`} className="calendar-button" aria-label={`Đặt thuê ${product.name}`}><Icon name="calendar" /></Link>
+                <Link href={productUrl(product.slug)} className="calendar-button" aria-label={`Đặt thuê ${product.name}`}><Icon name="calendar" /></Link>
               </div>
             </div>
           </AnimatedProductCard>

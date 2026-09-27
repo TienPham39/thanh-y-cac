@@ -7,11 +7,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const stage = await mkdtemp(path.join(root, ".directadmin-build-"));
 const dist = path.join(root, "dist");
 const excludedFromStaticDeploy = new Set([
-  path.join(root, "src", "app", "api"),
   path.join(root, "public", "images", "pages"),
-  path.join(root, "public", "images", "banner-1.png"),
-  path.join(root, "public", "images", "banner-2.png"),
-  path.join(root, "public", "images", "banner-3.png"),
 ]);
 try {
   for (const name of ["src", "public", "tsconfig.json", "next-env.d.ts", "postcss.config.mjs", "tailwind.config.ts", "package.json", "eslint.config.mjs"]) {
@@ -40,6 +36,9 @@ try {
 DirectoryIndex index.html
 ErrorDocument 404 /404.html
 RewriteEngine On
+RewriteRule ^trang-phuc/([a-z0-9-]{1,100})/?$ /chi-tiet-trang-phuc/?slug=$1 [R=302,L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^uploads/[^/]+$ api/index.php [L,QSA]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^api(?:/.*)?$ api/index.php [L,QSA]
 <IfModule mod_headers.c>

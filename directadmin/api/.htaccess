@@ -1,6 +1,6 @@
 Options -Indexes
 
-<FilesMatch "^(_config\.php|\.db-password)$">
+<FilesMatch "^(?:_.*\.php|\..*)$">
   <IfModule mod_authz_core.c>
     Require all denied
   </IfModule>

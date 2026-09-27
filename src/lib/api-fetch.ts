@@ -1,24 +1,9 @@
-let backendOrigin: Promise<string> | undefined;
-
-async function getBackendOrigin() {
-  if (process.env.NEXT_PUBLIC_STATIC_SITE !== "true") return "";
-  backendOrigin ??= fetch("/deployment.json", { cache: "no-store" })
-    .then(async (response) => {
-      if (!response.ok) throw new Error("Không tải được cấu hình backend.");
-      const config = await response.json();
-      if (config.apiOrigin === "") return "";
-      const url = new URL(config.apiOrigin);
-      if (url.protocol !== "https:" || url.pathname !== "/" || url.search || url.hash || url.username || url.password)
-        throw new Error("Địa chỉ backend phải là origin HTTPS.");
-      return url.origin;
-    })
-    .catch(() => {
-      backendOrigin = undefined;
-      throw new Error("Cấu hình backend trong deployment.json không hợp lệ.");
-    });
-  return backendOrigin;
-}
-
+// Frontend and PHP API share an origin in production; Next dev proxies /api to PHP.
 export async function apiFetch(path: string, init?: RequestInit) {
-  return fetch(`${await getBackendOrigin()}${path}`, init);
+  const response = await fetch(path, init);
+  const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+  if (!contentType.includes("application/json") && !contentType.includes("+json")) {
+    throw new Error("Không kết nối được dịch vụ dữ liệu. Vui lòng thử lại sau.");
+  }
+  return response;
 }

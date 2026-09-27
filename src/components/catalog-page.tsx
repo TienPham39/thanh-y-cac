@@ -14,6 +14,7 @@ import { CatalogCard } from "./catalog-card";
 import { CatalogFilters, control } from "./catalog-filters";
 import { Icon } from "./icon";
 import { apiFetch } from "@/lib/api-fetch";
+import { productUrl } from "@/lib/product-url";
 import type {
   CatalogCategory,
   CatalogResponse,
@@ -90,7 +91,7 @@ export default function CatalogPage() {
     router.push(`/trang-phuc?${next}`, { scroll: false });
   }
   function openDetail(slug: string) {
-    router.push(`/trang-phuc/${slug}`);
+    router.push(productUrl(slug));
   }
   const reset = () => router.push("/trang-phuc", { scroll: false });
   return (
@@ -200,7 +201,7 @@ export default function CatalogPage() {
                     [
                       ["", "Tất cả"],
                       ["available", "Có thể hỏi lịch"],
-                      ["advance", "Cần đặt trước"],
+                      ["rented", "Đang cho thuê"],
                     ],
                   ],
                   [
