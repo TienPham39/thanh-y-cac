@@ -85,6 +85,7 @@ jobs:
           name: directadmin-dist
           path: dist/
       - name: Update hosting database before uploading
+        if: vars.DIRECTADMIN_MIGRATION_MODE == 'ssh'
         env:
           SSH_HOST: ${{ secrets.DIRECTADMIN_SSH_HOST }}
           SSH_USER: ${{ secrets.DIRECTADMIN_SSH_USER }}
@@ -112,7 +113,7 @@ jobs:
           scp -o BatchMode=yes -r directadmin/migrations "$SSH_USER@$SSH_HOST:$remote_dir/"
           ssh -o BatchMode=yes "$SSH_USER@$SSH_HOST" "php '$remote_dir/migrate-hosting.php' '$API_PATH'"
       - name: Upload website through DirectAdmin API
-        # Schema changes must succeed before the new application is uploaded.
+        # Shared hosting uses the phpMyAdmin migration bundle; SSH is opt-in.
         if: success()
         env:
           DIRECTADMIN_FTP_HOST: ${{ secrets.DIRECTADMIN_FTP_HOST }}
