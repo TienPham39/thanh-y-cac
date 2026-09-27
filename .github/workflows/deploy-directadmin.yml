@@ -84,7 +84,36 @@ jobs:
         with:
           name: directadmin-dist
           path: dist/
+      - name: Update hosting database before uploading
+        env:
+          SSH_HOST: ${{ secrets.DIRECTADMIN_SSH_HOST }}
+          SSH_USER: ${{ secrets.DIRECTADMIN_SSH_USER }}
+          SSH_KEY: ${{ secrets.DIRECTADMIN_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DIRECTADMIN_SSH_KNOWN_HOSTS }}
+          API_PATH: ${{ vars.DIRECTADMIN_API_PATH }}
+        run: |
+          set -euo pipefail
+          : "${SSH_HOST:?Configure DIRECTADMIN_SSH_HOST}"
+          : "${SSH_USER:?Configure DIRECTADMIN_SSH_USER}"
+          : "${SSH_KEY:?Configure DIRECTADMIN_SSH_KEY}"
+          : "${SSH_KNOWN_HOSTS:?Configure verified DIRECTADMIN_SSH_KNOWN_HOSTS}"
+          : "${API_PATH:?Configure absolute DIRECTADMIN_API_PATH}"
+          [[ "$SSH_HOST" =~ ^[A-Za-z0-9][A-Za-z0-9.-]*$ ]]
+          [[ "$SSH_USER" =~ ^[A-Za-z0-9_][A-Za-z0-9_-]*$ ]]
+          [[ "$API_PATH" =~ ^/[A-Za-z0-9_./-]+$ && "$API_PATH" != *..* ]]
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          remote_dir=$(ssh -o BatchMode=yes "$SSH_USER@$SSH_HOST" 'mktemp -d /tmp/tyc-migrate.XXXXXXXX')
+          [[ "$remote_dir" =~ ^/tmp/tyc-migrate\.[A-Za-z0-9]+$ ]]
+          trap 'ssh -o BatchMode=yes "$SSH_USER@$SSH_HOST" "rm -rf -- $remote_dir"; rm -f ~/.ssh/id_ed25519' EXIT
+          scp -o BatchMode=yes scripts/migrate-hosting.php "$SSH_USER@$SSH_HOST:$remote_dir/"
+          scp -o BatchMode=yes -r directadmin/migrations "$SSH_USER@$SSH_HOST:$remote_dir/"
+          ssh -o BatchMode=yes "$SSH_USER@$SSH_HOST" "php '$remote_dir/migrate-hosting.php' '$API_PATH'"
       - name: Upload website through DirectAdmin API
+        # Schema changes must succeed before the new application is uploaded.
+        if: success()
         env:
           DIRECTADMIN_FTP_HOST: ${{ secrets.DIRECTADMIN_FTP_HOST }}
           DIRECTADMIN_FTP_USER: ${{ secrets.DIRECTADMIN_FTP_USER }}
@@ -93,6 +122,6 @@ jobs:
         run: bash scripts/deploy-directadmin.sh
       - name: Check live website
         run: |
-          curl --fail --silent --show-error --retry 3 --retry-delay 5 https://thanhycac.com/api/ready
+          curl --fail-with-body --silent --show-error --retry 3 --retry-delay 5 https://thanhycac.com/api/ready
           curl --fail --silent --show-error --head https://thanhycac.com/images/banner-1.webp > /dev/null
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' https://thanhycac.com/api/.db-password)" = 403
