@@ -1,4 +1,4 @@
-export const MAX_PRODUCT_IMAGES = 8;
+export const MAX_PRODUCT_IMAGES = 5;
 export const MAX_SOURCE_IMAGE_BYTES = 15_000_000;
 export const TARGET_IMAGE_BYTES = 350_000;
 export const MAX_IMAGE_EDGE = 1_600;

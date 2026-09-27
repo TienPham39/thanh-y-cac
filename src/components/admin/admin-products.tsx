@@ -41,6 +41,12 @@ function productPayload(product: AdminProduct, published = product.published) {
     description: product.description,
     image: product.images[0] || "",
     images: product.images,
+    components: product.components,
+    componentImages: product.componentImages,
+    popularity: product.rentalCount,
+    likes: product.likes,
+    rating: product.rating,
+    reviewCount: product.reviewCount,
     price: product.price,
     extraDay: product.extraDay,
     deposit: product.deposit,
@@ -216,7 +222,7 @@ export default function AdminProducts({
       existing.code === p.code &&
       serverCodes.includes(existing.code)
         ? existing.published
-        : false;
+        : !draftOnly;
     setError("");
     try {
       const images = await Promise.all(p.images.map(uploadImage));
@@ -242,11 +248,14 @@ export default function AdminProducts({
       }
       const persisted = persistProduct(
         savedProduct,
-        existing
+        serverCodes.includes(p.code) && existing
           ? products.map((row) => (row.id === p.id ? savedProduct : row))
-          : [...products, savedProduct],
+          : [savedProduct, ...products.filter(row => row.id !== p.id)],
       );
       if (!persisted) return null;
+      if (!serverCodes.includes(p.code)) {
+        setPage(1); setQuery(""); setCategory(""); setStatus(""); setPrice("");
+      }
       if (!draftOnly)
         setPublicationMessage(
           `Đã lưu thông tin trang phục ${savedProduct.code} thành công.`,

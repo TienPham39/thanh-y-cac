@@ -2,6 +2,15 @@
 // Local development/static-preview router. Never deploy this file.
 declare(strict_types=1);
 $path = (string)parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+// Existing public uploads predate the private PHP upload store.
+// Let the development server serve only validated image files from that folder.
+if (preg_match('#^/uploads/([a-zA-Z0-9_-]+\.(?:jpg|jpeg|png|webp))$#iD', $path, $image)) {
+    $publicUploads = realpath($_SERVER['DOCUMENT_ROOT'] . '/uploads');
+    $publicImage = realpath($_SERVER['DOCUMENT_ROOT'] . $path);
+    if ($publicUploads !== false && $publicImage !== false
+        && str_starts_with($publicImage, $publicUploads . DIRECTORY_SEPARATOR)
+        && is_file($publicImage)) return false;
+}
 if (str_starts_with($path, '/api/') || str_starts_with($path, '/uploads/')) {
     if (str_starts_with($path, '/api/_') || str_contains($path, '/.')) { http_response_code(404); exit; }
     require dirname(__DIR__) . '/directadmin/api/index.php';

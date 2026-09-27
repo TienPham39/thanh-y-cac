@@ -50,7 +50,8 @@ export default function ProductDetailPage({
         ? current.filter((item) => item !== slug)
         : [...current, slug],
     );
-  const included = product.accessories.length
+  const componentNames = product.components?.split("\n") ?? [];
+  const included = componentNames.some(Boolean) ? componentNames : product.accessories.length
     ? product.accessories.map((item) => accessories[item] ?? item)
     : ["Trang phục chính theo mẫu", "Phụ kiện được xác nhận khi thử đồ"];
 
@@ -59,7 +60,7 @@ export default function ProductDetailPage({
       <div className="relative z-[2] bg-[#f5f4f2]">
         <nav
           aria-label="Đường dẫn"
-          className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-2 px-4 py-3 text-xs text-[#68635f] sm:px-6"
+          className="mx-auto flex max-w-[1280px] 2xl:max-w-[1440px] flex-wrap items-center gap-2 px-4 py-3 text-xs text-[#68635f] sm:px-6"
         >
           <Link href="/">Trang chủ</Link>
           <span aria-hidden="true">›</span>
@@ -74,29 +75,53 @@ export default function ProductDetailPage({
           </span>
         </nav>
       </div>
-      <div className="relative z-[2] mx-auto max-w-[1600px] px-4 pt-6 sm:px-6 lg:pt-6 2xl:pt-8">
+      <div className="relative z-[2] mx-auto max-w-[1280px] 2xl:max-w-[1440px] px-4 pt-6 sm:px-6 lg:pt-6 2xl:pt-8">
         <section
           aria-label="Thông tin trang phục"
-          className="grid items-start gap-8 lg:grid-cols-[1.1fr_1fr] lg:gap-8 2xl:gap-12 2xl:grid-cols-[768px_minmax(0,1fr)]"
+          className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-7 xl:gap-10 2xl:gap-12"
         >
+          <div className="min-w-0">
           <ProductGallery
             key={product.slug}
             product={product}
             favorite={favorite}
             onFavorite={() => toggleFavorite(product.slug)}
           />
+            {componentNames.some(Boolean) && (
+              <section className="mt-5 border-t border-[#e6e2de] pt-5" aria-label="Trọn bộ trang phục gồm">
+                <h2 className="text-base font-semibold">Trọn bộ trang phục gồm</h2>
+                <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {componentNames.map((name, index) => name && (
+                    <li key={`${index}-${name}`} className="flex items-center gap-3 rounded border border-[#e6e2de] p-3">
+                      {product.componentImages?.[index] && (
+                        <img src={product.componentImages[index]} alt={name} width={72} height={72} loading="lazy" className="h-[72px] w-[72px] shrink-0 rounded object-contain" />
+                      )}
+                      <span className="min-w-0 break-words text-sm">{name}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
           <div className="min-w-0 lg:pt-1">
-            <p className="text-sm font-semiboldbold text-[#7B5815]">Thanh Y Các</p>
+            <p className="text-sm font-semibold text-[#7B5815]">Thanh Y Các</p>
             <h1 className="mt-2 text-2xl leading-snug sm:text-[30px] lg:text-[26px] 2xl:text-[30px] text-[#781216] font-bold">
               {product.name}
             </h1>
             <p className="mt-3 text-xs text-[#68635f]">
               Mã trang phục: {product.code}{" "}
-              <span className="mx-2" aria-hidden="true">
-                ·
-              </span>{" "}
-              {product.popularity} lượt quan tâm
             </p>
+            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3 text-xs text-[#68635f]" aria-label="Thống kê trang phục">
+              <div className="flex items-center gap-2">
+                <span aria-hidden="true" className="text-lg leading-none text-[#926515]">★</span>
+                <span className="text-sm font-semibold text-[#302b29]">{(product.rating ?? 0).toLocaleString("vi-VN")}<span className="font-normal text-[#68635f]">/5</span></span>
+                <span>({(product.reviewCount ?? 0).toLocaleString("vi-VN")} đánh giá)</span>
+              </div>
+              <div className="flex items-center gap-4 border-l border-[#e6e2de] pl-5 max-[420px]:w-full max-[420px]:border-l-0 max-[420px]:pl-0">
+                <span><strong className="font-semibold text-[#302b29]">{product.popularity.toLocaleString("vi-VN")}</strong> quan tâm</span>
+                <span><strong className="font-semibold text-[#302b29]">{(product.likes ?? 0).toLocaleString("vi-VN")}</strong> yêu thích</span>
+              </div>
+            </div>
             <div className="mb-6 mt-7 lg:my-5 2xl:mb-6 2xl:mt-7 flex flex-wrap items-baseline gap-3">
               <span className="text-sm">Giá thuê</span>
               <strong className="text-2xl font-semibold text-[#80151c]">
@@ -168,7 +193,7 @@ export default function ProductDetailPage({
         />
       </div>
       <ProductPolicies />
-      <div className="relative z-[2] mx-auto max-w-[1600px] px-4 pb-16 sm:px-6">
+      <div className="relative z-[2] mx-auto max-w-[1280px] 2xl:max-w-[1440px] px-4 pb-16 sm:px-6">
         {related.length > 0 && (
           <section
             aria-labelledby="related-title"

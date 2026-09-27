@@ -7,7 +7,7 @@ function adminProducts(bool $publicationOnly = false): never
     $method = $publicationOnly ? requireMethod('GET', 'PATCH') : requireMethod('GET', 'POST', 'PATCH', 'DELETE');
     $db = database();
     if ($method === 'GET') {
-        $rows = sql($db, "SELECT p.*, c.name AS categoryName, EXISTS(SELECT 1 FROM RentalRequest r WHERE r.productSlug = p.slug AND r.status = 'confirmed') AS isRented FROM CostumeProduct p JOIN ProductCategory c ON c.slug = p.categorySlug ORDER BY p.popularity DESC, p.slug ASC")->fetchAll();
+        $rows = sql($db, "SELECT p.*, c.name AS categoryName, EXISTS(SELECT 1 FROM RentalRequest r WHERE r.productSlug = p.slug AND r.status = 'confirmed') AS isRented FROM CostumeProduct p JOIN ProductCategory c ON c.slug = p.categorySlug ORDER BY p.createdAt DESC, p.slug ASC")->fetchAll();
         respond(['data' => array_map(fn($row) => $publicationOnly
             ? ['code' => $row['code'], 'published' => (bool)$row['published']]
             : [...product($row), 'rentalStatus' => $row['isRented'] ? 'rented' : 'ready', 'categoryName' => $row['categoryName'], 'published' => (bool)$row['published']], $rows)]);

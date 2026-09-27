@@ -22,6 +22,6 @@ test("reports the exact invalid file instead of a generic upload warning", () =>
     { name: "anh-qua-lon.png", type: "image/png", size: 16_000_000 },
   ], 0), /15 MB/);
   assert.match(imageSelectionError([
-    { name: "anh-thu-8.png", type: "image/png", size: 100_000 },
-  ], 8), /tối đa 8 ảnh/);
+    { name: "anh-thu-6.png", type: "image/png", size: 100_000 },
+  ], 5), /tối đa 5 ảnh/);
 });

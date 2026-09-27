@@ -55,27 +55,27 @@ export default function LoginPage() {
         </Link>
       </header>
       <main className="grid min-h-0 flex-1 lg:grid-cols-2">
-        <div className="flex min-h-0 flex-col overflow-y-auto px-6 py-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [@media(max-height:800px)]:py-4">
+        <div className="flex min-h-0 flex-col overflow-y-auto px-6 py-8 [@media(max-height:800px)]:py-4">
           <div className="mx-auto my-auto w-full max-w-[420px] shrink-0">
-            <div className="mb-10 text-center [@media(max-height:800px)]:mb-6 [@media(max-height:650px)]:mb-4">
-              <span className="text-3xl text-[#80151c] [@media(max-height:650px)]:hidden" aria-hidden="true">
+            <div className="mb-10 text-center [@media(max-height:800px)]:mb-6 [@media(max-height:700px)]:mb-4">
+              <span className="text-3xl text-[#80151c] [@media(max-height:700px)]:hidden" aria-hidden="true">
                 ❀
               </span>
-              <h1 className="mb-3 mt-3 text-[34px] font-bold text-[#650912]">
+              <h1 className="mb-3 mt-3 [@media(max-height:700px)]:my-2 [@media(max-height:700px)]:text-[28px] text-[34px] font-bold text-[#650912]">
                 Đăng nhập
               </h1>
               <p className="text-sm">
                 Bước vào không gian phục dựng y phục vương triều xưa
               </p>
               <div
-                className="mx-auto mt-6 flex w-28 items-center gap-2 text-[#bb8531] [@media(max-height:800px)]:mt-3 [@media(max-height:650px)]:hidden"
+                className="mx-auto mt-6 flex w-28 items-center gap-2 text-[#bb8531] [@media(max-height:800px)]:mt-3 [@media(max-height:700px)]:hidden"
                 aria-hidden="true"
               >
                 <span className="h-px flex-1 bg-[#e8c98f]" />❀
                 <span className="h-px flex-1 bg-[#e8c98f]" />
               </div>
             </div>
-            <form onSubmit={submitLogin} className="space-y-5 [@media(max-height:800px)]:space-y-4">
+            <form onSubmit={submitLogin} className="space-y-5 [@media(max-height:800px)]:space-y-4 [@media(max-height:700px)]:space-y-3">
               <label className="block text-sm">
                 Số điện thoại hoặc Email
                 <input
@@ -84,7 +84,7 @@ export default function LoginPage() {
                   autoComplete="username"
                   defaultValue="admin@thanhycac.com"
                   placeholder="Nhập SĐT hoặc Email..."
-                  className="mt-3 h-11 w-full appearance-none rounded border-2 border-[#ead7d0] bg-white px-4 !outline-[0px] !outline-offset-0 focus:border-[#80151c] focus:!shadow-none"
+                  className="mt-2 h-11 w-full appearance-none rounded border-2 border-[#ead7d0] bg-white px-4 !outline-[0px] !outline-offset-0 focus:border-[#80151c] focus:!shadow-none"
                 />
               </label>
               <label className="block text-sm">
@@ -142,7 +142,7 @@ export default function LoginPage() {
                   Quên mật khẩu?
                 </button>
               </div>
-              <button disabled={submitting} className="!mt-6 h-12 w-full rounded border border-[#c69b50] bg-[#80151c] font-medium text-white hover:bg-[#650912] disabled:cursor-wait disabled:opacity-70 [@media(max-height:650px)]:!mt-4">
+              <button disabled={submitting} className="!mt-6 h-12 w-full rounded border border-[#c69b50] bg-[#80151c] font-medium text-white hover:bg-[#650912] disabled:cursor-wait disabled:opacity-70 [@media(max-height:700px)]:!mt-4">
                 {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
               </button>
               {message && (
@@ -154,7 +154,7 @@ export default function LoginPage() {
                 </p>
               )}
             </form>
-            <p className="mt-5 text-center text-sm text-[#977c75]">
+            <p className="mt-5 [@media(max-height:700px)]:mt-3 text-center text-sm text-[#977c75]">
               Trở về{" "}
               <Link href="/" className="ml-1 text-[#80151c]">
                 Trang Chủ Thanh Y Các

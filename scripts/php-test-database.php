@@ -18,9 +18,15 @@ $db->exec($categoriesMigration);
 $returnMigration = file_get_contents(dirname(__DIR__) . '/directadmin/migrations/003-rental-return.sql');
 $db->exec($returnMigration);
 $db->exec($returnMigration);
+$componentsMigration = file_get_contents(dirname(__DIR__) . '/directadmin/migrations/005-product-components.sql');
+$db->exec($componentsMigration);
+$db->exec($componentsMigration);
 $pricingMigration = file_get_contents(dirname(__DIR__) . '/directadmin/migrations/004-rental-pricing.sql');
 $db->exec($pricingMigration);
 $db->exec($pricingMigration);
+$statisticsMigration = file_get_contents(dirname(__DIR__) . '/directadmin/migrations/006-product-statistics.sql');
+$db->exec($statisticsMigration);
+$db->exec($statisticsMigration);
 $directory = getenv('TYC_PRIVATE_DIR');
 if (!is_dir($directory)) mkdir($directory, 0700, true);
 file_put_contents($directory . '/config.php', '<?php return ' . var_export([

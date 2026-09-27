@@ -40,7 +40,7 @@ export default function ProductBookingPanel({ product, range, onReset }: { produ
           setNotification({ id: crypto.randomUUID(), tone: "success", message: "Đã gửi yêu cầu đặt thuê và thông báo cho quản trị viên. Cửa hàng sẽ liên hệ để xác nhận cọc và giữ đồ." });
         } catch (cause) { setError(cause instanceof Error ? cause.message : "Chưa lưu được yêu cầu. Vui lòng thử lại."); }
         finally { pending.current = false; setSaving(false); }
-      }} className="mx-auto mt-12 w-full max-w-[960px] min-w-0 scroll-mt-8 border-t border-[#e6e2de] bg-white pt-8">
+      }} className="mx-auto mt-8 lg:mt-10 w-full max-w-[860px] min-w-0 scroll-mt-8 border-t border-[#e6e2de] bg-white pt-8">
         <div className="mb-6 flex items-start justify-between gap-4"><div><h2 id="rental-contact-title" className="!font-['Inter'] text-lg font-semibold text-[#302b29]">Thông tin đăng ký giữ đồ</h2><p className="mt-1 font-['Inter'] text-sm text-[#665e58]">Thông tin chỉ dùng để tư vấn và xác nhận lịch thuê.</p></div><Icon name="shield" className="shrink-0 text-[#665e58]" /></div>
         <p className="mb-5 text-sm text-[#68635f]">Ngày thuê: {formatRentalDate(range.start)} — {formatRentalDate(range.end)}</p>
         <div className="grid gap-4 sm:grid-cols-2">

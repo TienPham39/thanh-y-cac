@@ -84,6 +84,8 @@ try {
   await request('/api/admin/categories', 'POST', category, 201);
   const categoryProduct = {...product, code:'ZZ-TEST', slug:'category-test', category:category.name};
   await request('/api/admin/products', 'POST', categoryProduct);
+  assert.equal((await request('/api/admin/products')).body.data[0].code, 'ZZ-TEST', 'new products lead the admin list');
+  assert.equal((await request('/api/products/category-test')).body.data.code, 'ZZ-TEST', 'published creation is visible to customers');
   await request('/api/admin/products', 'POST', categoryProduct, 409);
   await request('/api/admin/categories', 'DELETE', {slug:category.slug}, 409);
   await request('/api/admin/categories', 'PATCH', {...category, name:'Tên danh mục mới'});
@@ -91,6 +93,11 @@ try {
   await request('/api/admin/products', 'DELETE', {codes:['ZZ-TEST']});
   await request('/api/admin/categories', 'DELETE', {slug:category.slug});
   assert.equal((await request('/api/products/php-test')).body.data.images.length, 2);
+  await request('/api/admin/products', 'PATCH', {...product,popularity:100,likes:50,rating:4.5,reviewCount:40});
+  const stats = (await request('/api/products/php-test')).body.data;
+  assert.deepEqual([stats.popularity,stats.likes,stats.rating,stats.reviewCount],[100,50,4.5,40]);
+  await request('/api/admin/products', 'PATCH', {...product,rating:6},422);
+  await request('/api/admin/products', 'PATCH', {...product,likes:-1},422);
   await request('/api/admin/products', 'PATCH', {...product,name:'Saved name'});
   await request('/api/admin/products/publication', 'PATCH', {...product,published:false});
   await request('/api/products/php-test','GET',undefined,404);
@@ -100,6 +107,16 @@ try {
   const png='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jF1kAAAAASUVORK5CYII=';
   const upload=(await request('/api/admin/uploads','POST',{image:png},201)).body.data.url;
   const image=await fetch(base+upload);assert.equal(image.status,200);assert.equal(image.headers.get('content-type'),'image/png');
+  const components = {components:'Mũ Mông Cổ\nTrang sức Mông Cổ',componentImages:[upload,'']};
+  await request('/api/admin/products','PATCH',{...product,...components});
+  const savedComponents = (await request('/api/products/php-test')).body.data;
+  assert.equal(savedComponents.components, components.components);
+  assert.deepEqual(savedComponents.componentImages, components.componentImages);
+  assert.deepEqual((await request('/api/admin/products')).body.data.find(row=>row.code===product.code).componentImages, components.componentImages);
+  await request('/api/admin/products','PATCH',{...product,...components,componentImages:['/uploads/../secret.php','']},422);
+  await request('/api/admin/products','PATCH',{...product,...components,componentImages:[]},422);
+  await request('/api/admin/products','PATCH',{...product,components:'',componentImages:[]});
+  assert.deepEqual((await request('/api/products/php-test')).body.data.componentImages, []);
   await request('/api/admin/uploads','POST',{image:'data:image/png;base64,PD9waHAgZXZpbA=='},422);
   const date=new Date(Date.now()+86400000*2).toISOString().slice(0,10);
   const rental={id:randomUUID(),productSlug:'php-test',name:'Test customer',phone:'0901234567',start:date,end:date,height:'160',weight:'50',note:''};

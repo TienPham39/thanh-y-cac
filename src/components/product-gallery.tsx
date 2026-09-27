@@ -13,7 +13,7 @@ import { Icon } from "./icon";
 export function ProductGallery({ product }: {
   product: CatalogProduct; favorite: boolean; onFavorite: () => void;
 }) {
-  const images = [...new Set([product.image, ...(product.images ?? [])].filter(Boolean))];
+  const images = [...new Set([product.image, ...(product.images ?? [])].filter(Boolean))].slice(0, 5);
   const [active, setActive] = useState(0);
   const [popupActive, setPopupActive] = useState(0);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
@@ -42,10 +42,10 @@ export function ProductGallery({ product }: {
     setPopupActive(current => (current + offset + images.length) % images.length);
   }
 
-  return <section aria-label={`Bộ ảnh ${product.name}`} className="grid min-w-0 content-start gap-4 lg:gap-3 lg:grid-cols-[64px_minmax(0,1fr)] 2xl:gap-4 2xl:grid-cols-[72px_minmax(0,1fr)]">
+  return <section aria-label={`Bộ ảnh ${product.name}`} className="grid min-w-0 content-start gap-4 lg:gap-3 lg:grid-cols-[52px_minmax(0,1fr)] 2xl:gap-4 2xl:grid-cols-[72px_minmax(0,1fr)]">
     <div className="relative w-full max-w-[680px] overflow-hidden bg-[#f5f4f2] lg:col-start-2 lg:row-start-1">
       <button type="button" aria-label={`Phóng to ảnh ${index + 1}: ${product.name}`} onClick={() => { setPopupActive(index); setExpanded(true); }}
-        className="relative block aspect-[680/646] w-full cursor-zoom-in">
+        className="relative block aspect-[680/646] w-full cursor-zoom-in lg:aspect-auto lg:h-[clamp(360px,60dvh,580px)] 2xl:h-[640px]">
         {imageFailed ? <span className="absolute inset-0 flex items-center justify-center px-8 text-sm text-[#765f5a]">Ảnh chưa tải được. Vui lòng chọn ảnh khác.</span>
           : <Image key={src} src={src} alt={`${product.name} — ảnh ${index + 1}`} fill priority={index === 0}
             sizes="(min-width:1536px) 680px, (min-width:1024px) 45vw, (min-width:768px) 680px, 100vw" className="object-contain"
@@ -54,7 +54,7 @@ export function ProductGallery({ product }: {
       </button>
       {hasMultiple && <span className="pointer-events-none absolute left-4 top-4 rounded bg-white/95 px-3 py-1.5 text-xs font-medium tabular-nums text-[#74131b]" aria-live="polite">{index + 1} / {images.length}</span>}
     </div>
-    {images.length > 0 && <div role="group" aria-label="Chọn ảnh trang phục" className="flex gap-3 overflow-x-auto p-1 lg:col-start-1 lg:row-start-1 lg:max-h-[700px] lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden">
+    {images.length > 0 && <div role="group" aria-label="Chọn ảnh trang phục" className="flex gap-3 overflow-x-auto p-1 lg:col-start-1 lg:row-start-1 lg:h-[clamp(360px,60dvh,580px)] 2xl:h-[640px] lg:flex-col lg:overflow-hidden">
       {images.map((image, imageIndex) => <button key={image} type="button" ref={node => { thumbnailRefs.current[imageIndex] = node; }}
         aria-label={`Xem ảnh ${imageIndex + 1} của ${product.name}`} aria-pressed={index === imageIndex}
         onClick={() => setActive(imageIndex)}
@@ -65,7 +65,7 @@ export function ProductGallery({ product }: {
           setActive(next);
           thumbnailRefs.current[next]?.focus();
         }}
-        className={`relative aspect-square min-w-14 basis-[calc((100%-48px)/5)] shrink-0 overflow-hidden border lg:aspect-[2/3] lg:w-full lg:basis-auto transition-colors ${index === imageIndex ? "border-[#38322e]" : "border-transparent opacity-60 hover:border-[#a69b92] hover:opacity-100"}`}>
+        className={`relative aspect-square min-w-14 basis-[calc((100%-48px)/5)] shrink-0 overflow-hidden border lg:aspect-auto lg:min-h-0 lg:w-full lg:basis-[calc((100%-48px)/5)] transition-colors ${index === imageIndex ? "border-[#38322e]" : "border-transparent opacity-60 hover:border-[#a69b92] hover:opacity-100"}`}>
         <Image src={image} alt={`Ảnh thu nhỏ ${imageIndex + 1}`} fill sizes="100px" className="object-cover" />
       </button>)}
     </div>}

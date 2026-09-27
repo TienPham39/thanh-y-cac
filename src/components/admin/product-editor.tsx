@@ -8,6 +8,7 @@ import type { AdminCategory } from "@/lib/admin-categories";
 import {
   imageSelectionError,
   MAX_IMAGE_EDGE,
+  MAX_PRODUCT_IMAGES,
   TARGET_IMAGE_BYTES,
 } from "@/lib/admin-image-upload";
 import {
@@ -198,6 +199,7 @@ export default function ProductEditor({
     }));
   }
   function addComponentItem() {
+    if (componentItems.length >= 4) return;
     updateComponentItems([...componentItems, ""], [...componentImages, ""]);
     requestAnimationFrame(() =>
       componentList.current
@@ -342,6 +344,10 @@ export default function ProductEditor({
       });
       return;
     }
+    if (p.images.length > MAX_PRODUCT_IMAGES) {
+      setNotification({ message: `Chỉ giữ tối đa ${MAX_PRODUCT_IMAGES} ảnh trang phục trước khi lưu.`, tone: "warning" });
+      return;
+    }
     if (!p.images.length) {
       setNotification({
         message: "Vui lòng thêm ít nhất một ảnh trang phục.",
@@ -353,6 +359,10 @@ export default function ProductEditor({
       componentItems,
       componentImages,
     );
+    if (parseProductComponents(normalizedComponents.components).length > 4) {
+      setNotification({ message: "Mỗi trang phục chỉ được thêm tối đa 4 phụ kiện. Vui lòng bỏ phụ kiện dư trước khi lưu.", tone: "warning" });
+      return;
+    }
     const updated = {
       ...p,
       ...normalizedComponents,
@@ -498,7 +508,7 @@ export default function ProductEditor({
                 </button>
               </div>
             ))}
-            {p.images.length < 8 && (
+            {p.images.length < MAX_PRODUCT_IMAGES && (
               <label className="relative flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-[#c9bec0] bg-white text-xs text-[#737784] transition hover:border-[#80151c] hover:bg-[#fff8f6] hover:text-[#80151c]">
                 <span className="mb-1 text-2xl leading-none text-[#80151c]">
                   ＋
@@ -520,7 +530,7 @@ export default function ProductEditor({
             )}
           </div>
           <p className="mt-4 text-xs leading-5 text-[#737784]">
-            Chọn ảnh thu nhỏ bên dưới để đặt làm ảnh đại diện. Tối đa 8 ảnh JPG,
+            Chọn ảnh thu nhỏ bên dưới để đặt làm ảnh đại diện. Tối đa {MAX_PRODUCT_IMAGES} ảnh JPG,
             PNG hoặc WebP; ảnh dưới 15 MB sẽ được tự động tối ưu.
           </p>
         </Section>
@@ -643,9 +653,10 @@ export default function ProductEditor({
             <button
               type="button"
               onClick={addComponentItem}
-              className={`${buttonStyle} mt-4 w-full border-dashed text-[#80151c]`}
+              disabled={componentItems.length >= 4}
+              className={`${buttonStyle} mt-4 w-full border-dashed text-[#80151c] disabled:cursor-not-allowed disabled:opacity-50`}
             >
-              ＋ Thêm phụ kiện đi kèm
+              {componentItems.length >= 4 ? "Tối đa 4 phụ kiện" : `＋ Thêm phụ kiện đi kèm (${componentItems.length}/4)`}
             </button>
           </div>
         </Section>
@@ -685,11 +696,9 @@ export default function ProductEditor({
               required: true,
             })}
             {field("material", "Chất liệu")}
-            {field("accessories", "Phụ kiện đi kèm")}
+
           </div>
-          <div className="mt-3">
-            {field("fitNote", "Ghi chú điều chỉnh kích thước")}
-          </div>
+
         </Section>
       </div>
       <div className="mt-4">
@@ -697,26 +706,13 @@ export default function ProductEditor({
           <ProductRentalCalendar productCode={initial.code} />
         </Section>
       </div>
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <Section title="Nội dung chi tiết & bộ sưu tập">
-          {field("details", "Mô tả chi tiết", { area: true })}
-          <div className="mt-3">
-            {field("collection", "Bộ sưu tập đề xuất")}
-          </div>
+      <div className="mt-4">
+        <Section title="Thống kê trang phục">
           <div className="mt-3 grid grid-cols-2 gap-3">
-            {field("rentalCount", "Lượt thuê", { type: "number" })}
+            {field("rentalCount", "Lượt quan tâm", { type: "number" })}
             {field("likes", "Lượt yêu thích", { type: "number" })}
             {field("rating", "Điểm đánh giá (0–5)", { type: "number", max: 5 })}
             {field("reviewCount", "Số lượt đánh giá", { type: "number" })}
-          </div>
-        </Section>
-        <Section title="Chính sách & hướng dẫn bảo quản">
-          <div className="space-y-3">
-            {field("cleaning", "Quy trình giặt hấp / bảo quản", { area: true })}
-            {field("rentalPolicy", "Thời gian thuê, gia hạn & trả đồ", {
-              area: true,
-            })}
-            {field("damagePolicy", "Bồi hoàn & trách nhiệm", { area: true })}
           </div>
         </Section>
       </div>
@@ -781,7 +777,6 @@ export default function ProductEditor({
             </p>
           </div>
         </div>
-        <p className="mt-5 whitespace-pre-line leading-7">{p.details}</p>
       </dialog>
       <ConfirmDialog
         open={leaveOpen}

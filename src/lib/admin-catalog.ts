@@ -33,6 +33,8 @@ export function mergeAdminCatalog(catalog: AdminCatalogRow[], drafts: AdminProdu
       name: row.name,
       description: row.description,
       images: row.images?.length ? row.images : [row.image, ...(draft?.images ?? []).filter(image => image !== row.image)],
+      components: row.components ?? draft?.components ?? "",
+      componentImages: row.componentImages ?? draft?.componentImages ?? [],
       price: row.price,
       extraDay: row.extraDay ?? draft?.extraDay ?? row.price,
       deposit: row.deposit ?? draft?.deposit ?? 0,
@@ -48,6 +50,9 @@ export function mergeAdminCatalog(catalog: AdminCatalogRow[], drafts: AdminProdu
       accessories: row.accessories.join(", "),
       badge: row.badge,
       rentalCount: row.popularity,
+      likes: row.likes ?? draft?.likes ?? 0,
+      rating: row.rating ?? draft?.rating ?? 0,
+      reviewCount: row.reviewCount ?? draft?.reviewCount ?? 0,
       published: row.published,
     } satisfies AdminProduct;
   });

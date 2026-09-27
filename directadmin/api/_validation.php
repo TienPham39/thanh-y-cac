@@ -22,7 +22,7 @@ function publication(array $row, ?array $categoryMap = null): array
         if (!is_int($row[$key] ?? null) || $row[$key] < 0 || $row[$key] > 300) fail(422, 'INVALID_REQUEST', 'Số đo không hợp lệ.');
     }
     if ($row['minHeight'] > $row['maxHeight'] || $row['minWeight'] > $row['maxWeight']) fail(422, 'INVALID_REQUEST', 'Khoảng số đo không hợp lệ.');
-    if (array_key_exists('images', $row) && (!is_array($row['images']) || !array_is_list($row['images']) || count($row['images']) < 1 || count($row['images']) > 8 || count(array_filter($row['images'], 'safeImage')) !== count($row['images']))) fail(422, 'INVALID_REQUEST', 'Danh sách ảnh không hợp lệ.');
+    if (array_key_exists('images', $row) && (!is_array($row['images']) || !array_is_list($row['images']) || count($row['images']) < 1 || count($row['images']) > 5 || count(array_filter($row['images'], 'safeImage')) !== count($row['images']))) fail(422, 'INVALID_REQUEST', 'Danh sách ảnh không hợp lệ.');
     $images = isset($row['images']) ? array_values(array_unique($row['images'])) : null;
     $split = fn(string $s) => array_values(array_filter(array_map('trim', explode(',', $s)), fn($v) => $v !== ''));
     $result = [
@@ -42,6 +42,26 @@ function publication(array $row, ?array $categoryMap = null): array
         $result[$key] = $row[$key];
     }
     if (isset($row['deposit']) && $row['deposit'] > $row['price'] + ($row['accessoryFee'] ?? 0)) fail(422, 'INVALID_REQUEST', 'Cọc giữ lịch không được vượt tổng tiền thuê một ngày.');
+    if (array_key_exists('components', $row)) {
+        if (!is_string($row['components']) || textLength($row['components']) > 5000) fail(422, 'INVALID_REQUEST', 'Danh sách phụ kiện không hợp lệ.');
+        $names = $row['components'] === '' ? [] : explode("\n", $row['components']);
+        $photos = $row['componentImages'] ?? [];
+        if (count($names) > 4) fail(422, 'INVALID_REQUEST', 'Mỗi trang phục chỉ được thêm tối đa 4 phụ kiện.');
+        if (!is_array($photos) || !array_is_list($photos) || count($photos) !== count($names)) fail(422, 'INVALID_REQUEST', 'Ảnh phụ kiện không khớp danh sách.');
+        foreach ($names as $name) if (trim($name) === '') fail(422, 'INVALID_REQUEST', 'Tên phụ kiện không được để trống.');
+        foreach ($photos as $photo) if ($photo !== '' && !safeImage($photo)) fail(422, 'INVALID_REQUEST', 'Ảnh phụ kiện không hợp lệ.');
+        $result['components'] = $row['components'];
+        $result['componentImages'] = json_encode($photos, JSON_THROW_ON_ERROR);
+    }
+    foreach (['popularity', 'likes', 'reviewCount'] as $key) {
+        if (!array_key_exists($key, $row)) continue;
+        if (!is_int($row[$key]) || $row[$key] < 0 || $row[$key] > 2147483647) fail(422, 'INVALID_REQUEST', 'Số lượt phải là số nguyên không âm.');
+        $result[$key] = $row[$key];
+    }
+    if (array_key_exists('rating', $row)) {
+        if ((!is_int($row['rating']) && !is_float($row['rating'])) || $row['rating'] < 0 || $row['rating'] > 5) fail(422, 'INVALID_REQUEST', 'Điểm đánh giá phải từ 0 đến 5.');
+        $result['rating'] = round($row['rating'], 1);
+    }
     return $result;
 }
 

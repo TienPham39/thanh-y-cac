@@ -5,6 +5,8 @@ export type CatalogProduct = {
   description: string;
   image: string;
   images?: string[];
+  components?: string | null;
+  componentImages?: string[] | null;
   price: number;
   extraDay?: number | null;
   deposit?: number | null;
@@ -21,6 +23,9 @@ export type CatalogProduct = {
   badge: string;
   badgeTone: string;
   popularity: number;
+  likes?: number | null;
+  rating?: number | null;
+  reviewCount?: number | null;
 };
 export type CatalogCategory = { slug: string; name: string; count: number };
 export type CatalogResponse = {

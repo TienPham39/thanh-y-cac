@@ -12,4 +12,7 @@ $db->exec(file_get_contents(dirname(__DIR__) . '/directadmin/migrations/001-php-
 $db->exec(file_get_contents(dirname(__DIR__) . '/directadmin/migrations/002-categories.sql'));
 $db->exec(file_get_contents(dirname(__DIR__) . '/directadmin/migrations/003-rental-return.sql'));
 $db->exec(file_get_contents(dirname(__DIR__) . '/directadmin/migrations/004-rental-pricing.sql'));
+$db->exec(file_get_contents(dirname(__DIR__) . '/directadmin/migrations/005-product-components.sql'));
+
+$db->exec(file_get_contents(dirname(__DIR__) . '/directadmin/migrations/006-product-statistics.sql'));
 echo "PHP API schema migration complete.\n";
