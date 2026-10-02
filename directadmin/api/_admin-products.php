@@ -40,7 +40,7 @@ function adminProducts(bool $publicationOnly = false): never
             $marks = implode(',', array_fill(0, count($data), '?'));
             sql($db, "INSERT INTO CostumeProduct ({$columns}, createdAt, updatedAt) VALUES ({$marks}, UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))", array_values($data));
         } else fail(404, 'NOT_FOUND', 'Không tìm thấy trang phục cần cập nhật.');
-        $row = sql($db, 'SELECT * FROM CostumeProduct WHERE code = ?', [$data['code']])->fetch();
+        $row = sql($db, "SELECT p.*, c.name AS categoryName, EXISTS(SELECT 1 FROM RentalRequest r WHERE r.productSlug = p.slug AND r.status = 'confirmed') AS isRented FROM CostumeProduct p JOIN ProductCategory c ON c.slug = p.categorySlug WHERE p.code = ?", [$data['code']])->fetch();
         $db->commit();
     } catch (Throwable $e) {
         if ($db->inTransaction()) $db->rollBack();

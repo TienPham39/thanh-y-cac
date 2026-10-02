@@ -11,14 +11,17 @@ function availability(): never
     respond(['data' => sql($db, 'SELECT start, end FROM RentalRequest WHERE productSlug = ? AND status = ? AND end >= ? ORDER BY start ASC', [$slug, 'confirmed', today()])->fetchAll()]);
 }
 
-function createRental(): never
+function createRental(bool $admin = false): never
 {
+    if ($admin) requireAdmin();
     requireMethod('POST');
     requireOrigin();
     $data = rentalInput(input(10000), today());
     $db = database();
-    rateLimit($db, 'rental-phone:' . $data['phone'], 10, 600);
-    rateLimit($db, 'rental-ip:' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'), 30, 600);
+    if (!$admin) {
+        rateLimit($db, 'rental-phone:' . $data['phone'], 10, 600);
+        rateLimit($db, 'rental-ip:' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'), 30, 600);
+    }
     $db->beginTransaction();
     try {
         // Retries may reuse the same ID only with the identical request payload.
@@ -28,7 +31,8 @@ function createRental(): never
             $db->commit();
             respond(['id' => $existing['id']], 201);
         }
-        $product = sql($db, 'SELECT code, name, price, extraDay, deposit, accessoryFee FROM CostumeProduct WHERE slug = ? AND published = 1 FOR UPDATE', [$data['productSlug']])->fetch();
+        $published = $admin ? '' : ' AND published = 1';
+        $product = sql($db, "SELECT code, name, price, extraDay, deposit, accessoryFee FROM CostumeProduct WHERE slug = ?{$published} FOR UPDATE", [$data['productSlug']])->fetch();
         if (!$product) fail(404, 'NOT_FOUND', 'Trang phục không còn nhận yêu cầu thuê.');
         if (sql($db, 'SELECT day FROM RentalReservedDay WHERE productSlug = ? AND day BETWEEN ? AND ? LIMIT 1', [$data['productSlug'], $data['start'], $data['end']])->fetch()) fail(409, 'CONFLICT', 'Khoảng ngày này đã được đặt. Vui lòng chọn ngày khác.');
         $data['productCode'] = $product['code'];
@@ -57,7 +61,8 @@ function serializeRental(array $row): array
 function adminRentals(): never
 {
     requireAdmin();
-    $method = requireMethod('GET', 'PATCH');
+    $method = requireMethod('GET', 'POST', 'PATCH');
+    if ($method === 'POST') createRental(true);
     $db = database();
     if ($method === 'GET') {
         $productCode = $_GET['productCode'] ?? '';
@@ -65,19 +70,21 @@ function adminRentals(): never
         if ($productCode !== '') respond(['data' => sql($db, 'SELECT id, start, end, name, phone FROM RentalRequest WHERE productCode = ? AND status = ? ORDER BY start ASC', [$productCode, 'confirmed'])->fetchAll()]);
         $unread = (int)sql($db, 'SELECT COUNT(*) FROM RentalRequest WHERE readAt IS NULL')->fetchColumn();
         if (($_GET['count'] ?? '') === '1') respond(['unread' => $unread]);
+        $counts = sql($db, "SELECT COUNT(*) AS total, COALESCE(SUM(status IN ('confirmed', 'completed')), 0) AS deposited, COALESCE(SUM(status = 'cancelled'), 0) AS cancelled FROM RentalRequest")->fetch();
+        $summary = array_map('intval', $counts);
         $requestId = $_GET['requestId'] ?? '';
         if (!is_string($requestId) || strlen($requestId) > 36) fail(422, 'INVALID_REQUEST', 'Mã yêu cầu không hợp lệ.');
         if ($requestId !== '') {
-            $rows = sql($db, 'SELECT * FROM RentalRequest WHERE id = ?', [$requestId])->fetchAll();
-            respond(['data' => array_map('serializeRental', $rows), 'total' => count($rows), 'unread' => $unread, 'page' => 1, 'pageSize' => 6]);
+            $rows = sql($db, 'SELECT r.*, p.image AS productImage FROM RentalRequest r LEFT JOIN CostumeProduct p ON p.slug = r.productSlug WHERE r.id = ?', [$requestId])->fetchAll();
+            respond(['data' => array_map('serializeRental', $rows), 'summary' => $summary, 'total' => count($rows), 'unread' => $unread, 'page' => 1, 'pageSize' => 6]);
         }
         $size = filter_var($_GET['pageSize'] ?? 6, FILTER_VALIDATE_INT) ?: 6;
         if (!in_array($size, [6, 12, 20, 50], true)) $size = 6;
         $total = (int)sql($db, 'SELECT COUNT(*) FROM RentalRequest')->fetchColumn();
         $page = min(max(1, (int)ceil($total / $size)), max(1, filter_var($_GET['page'] ?? 1, FILTER_VALIDATE_INT) ?: 1));
         $offset = ($page - 1) * $size;
-        $rows = sql($db, "SELECT * FROM RentalRequest ORDER BY createdAt DESC, id DESC LIMIT {$size} OFFSET {$offset}")->fetchAll();
-        respond(['data' => array_map('serializeRental', $rows), 'total' => $total, 'unread' => $unread, 'page' => $page, 'pageSize' => $size]);
+        $rows = sql($db, "SELECT r.*, p.image AS productImage FROM RentalRequest r LEFT JOIN CostumeProduct p ON p.slug = r.productSlug ORDER BY r.createdAt DESC, r.id DESC LIMIT {$size} OFFSET {$offset}")->fetchAll();
+        respond(['data' => array_map('serializeRental', $rows), 'summary' => $summary, 'total' => $total, 'unread' => $unread, 'page' => $page, 'pageSize' => $size]);
     }
     requireOrigin();
     $body = input(1000);

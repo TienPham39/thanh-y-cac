@@ -10,7 +10,9 @@ check(reservationDays('2026-12-31', '2027-01-01') === ['2026-12-31', '2027-01-01
 check(count(reservationDays('2026-01-01', '2027-01-01')) === 366);
 try { reservationDays('2026-01-01', '2027-01-02'); throw new RuntimeException('Oversized range accepted'); } catch (ApiError $e) { check($e->status === 422); }
 $row = ['slug'=>'test','code'=>'T','name'=>'Test','description'=>'','image'=>'/images/logo.png','price'=>1,'categorySlug'=>'test','gender'=>'female','availability'=>'available','minHeight'=>1,'maxHeight'=>2,'minWeight'=>1,'maxWeight'=>2,'tags'=>'["valid",42,null]','accessories'=>'{"object":"invalid"}','badge'=>'','badgeTone'=>'red','popularity'=>0,'images'=>'"legacy-scalar"'];
+$row['categoryName'] = 'Danh mục hiện tại';
 $serialized = product($row);
+check($serialized['categoryName'] === 'Danh mục hiện tại');
 check($serialized['tags'] === ['valid']);
 check($serialized['accessories'] === []);
 check($serialized['images'] === ['/images/logo.png']);

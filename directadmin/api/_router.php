@@ -13,12 +13,16 @@ require __DIR__ . '/_admin-products.php';
 require __DIR__ . '/_rentals.php';
 require __DIR__ . '/_pricing.php';
 require __DIR__ . '/_categories.php';
+require __DIR__ . '/_dashboard.php';
+require __DIR__ . '/_users.php';
 $path = rtrim((string)parse_url($_SERVER['REQUEST_URI'] ?? '/api', PHP_URL_PATH), '/');
 $stringError = in_array($path, ['/api/rental-requests', '/api/admin/rental-requests', '/api/products/availability'], true);
 try {
-    if ($path === '/api/health') { requireMethod('GET'); respond(['status' => 'ok']); }
+    if ($path === '/api/health') { requireMethod('GET'); respond(['status' => 'ok', 'service' => 'thanh-y-cac-php']); }
     if ($path === '/api/auth/session') authSession();
     if ($path === '/api/admin/products') adminProducts();
+    if ($path === '/api/admin/dashboard') adminDashboard();
+    if ($path === '/api/admin/users') adminUsers();
     if ($path === '/api/admin/categories') adminCategories();
     if ($path === '/api/admin/products/publication') adminProducts(true);
     if ($path === '/api/admin/uploads') uploadImage();

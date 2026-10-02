@@ -23,6 +23,7 @@ Danh mục công khai chỉ trả sản phẩm published=true; API quản trị 
 | POST /api/admin/uploads | {image: data URL}; JPG/PNG/WebP tối đa 750000 byte; trả data.url |
 | GET /uploads/:filename | Ảnh đã upload; không thực thi nội dung file |
 | GET /api/admin/rental-requests | Danh sách, phân trang, unread; hỗ trợ count=1, requestId, productCode |
+| POST /api/admin/rental-requests | Admin tạo đơn thuê trực tiếp (hotline/tại cửa hàng), cùng payload với API đặt thuê công khai; trả {id}, HTTP 201. Cho phép chọn trang phục chưa mở bán. Đơn tạo ở trạng thái pending, xác nhận cọc bằng PATCH để khóa lịch. |
 | PATCH /api/admin/rental-requests | {id, action: read/confirm/cancel}; trả {ok:true} |
 
 Các thao tác ghi yêu cầu Origin khớp APP_ORIGIN và application/json.
@@ -64,3 +65,13 @@ Hash scrypt cũ phải được thay bằng hash PHP. Xem deploy-directadmin-php
 
 npm run test:php kiểm tra API thật trên database test riêng, gồm xác nhận đồng thời.
 Node.js chỉ dùng chạy frontend tooling/test harness; không có Node API server.
+
+### Admin dashboard
+GET /api/admin/dashboard?start=2026-10-01&end=2026-10-31 requires an admin session. Dates are inclusive in Asia/Ho_Chi_Minh, default to today, and allow at most 730 days between boundaries. Returns order counts, confirmed/completed order value and snapshot deposits, daily series for ranges up to 31 days and monthly series for longer ranges, and the top five rented products. Uses order creation date. Cancelled orders are excluded from financial totals; missing snapshots are reported. These values do not represent settled revenue or refunds.
+
+
+### Internal accounts
+
+`GET/POST/PATCH /api/admin/users` is restricted to the configured system administrator. Internal accounts are Managers with access to business APIs, not user administration. POST accepts name, email, password (10–72 bytes). PATCH accepts email and active (boolean). Lock/unlock rotates the credential version so previous sessions remain invalid. Password hashes are never returned. No public registration endpoint is provided.
+
+Apply `directadmin/migrations/007-internal-users.sql` before deploying this API. Existing configured admin credentials remain supported. Create an initial Manager using the CLI-only `scripts/create-internal-user.php EMAIL NAME`, providing the password on stdin in the configured PHP environment. The script leaves an existing account unchanged. Never commit passwords or include them in a frontend bundle. Accounts created locally are not automatically copied to hosting.

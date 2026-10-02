@@ -12,6 +12,7 @@ export type CatalogProduct = {
   deposit?: number | null;
   accessoryFee?: number | null;
   categorySlug: string;
+  categoryName?: string;
   gender: string;
   availability: string;
   minHeight: number;

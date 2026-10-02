@@ -76,7 +76,7 @@ export default function AdminSelect({
                   onChange(option.value);
                   setOpen(false);
                 }}
-                className={`flex min-h-10 w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition ${active ? "bg-[#80151c] font-medium text-white" : "text-[#4d464b] hover:bg-[#f9eeee] hover:text-[#80151c]"}`}
+                className={`flex min-h-10 w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition ${active ? "bg-[#80151c] border !border-[#b8872e] font-medium text-white" : "text-[#4d464b] hover:bg-[#f9eeee] hover:text-[#80151c]"}`}
               >
                 <span>{option.label}</span>
                 {active && <span aria-hidden="true">✓</span>}

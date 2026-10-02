@@ -135,7 +135,7 @@ export default function ProductRentalCalendar({
                     aria-pressed={selected === date}
                     aria-current={date === today ? "date" : undefined}
                     onClick={() => setSelected(date)}
-                    className={`min-h-11 rounded-md border text-sm transition ${selected === date ? "border-[#781216] ring-1 ring-[#781216]" : "border-transparent"} ${booked ? "bg-[#781216] font-semibold text-white hover:bg-[#5e1012]" : "bg-green-50 text-green-900 hover:bg-green-100"} ${outside ? "opacity-40" : ""}`}
+                    className={`min-h-11 rounded-md border text-sm transition ${selected === date ? "border-[#781216] ring-1 ring-[#781216]" : "border-transparent"} ${booked ? "bg-[#781216] border !border-[#b8872e] font-semibold text-white hover:bg-[#5e1012]" : "bg-green-50 text-green-900 hover:bg-green-100"} ${outside ? "opacity-40" : ""}`}
                   >
                     <span>{Number(date.slice(8))}</span>
                     {date === today && (

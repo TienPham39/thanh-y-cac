@@ -439,7 +439,7 @@ a:focus-visible {
 }
 .product-card {
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: 2px;
   border: 1px solid var(--border);
   background: white;
   display: flex;

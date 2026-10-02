@@ -37,11 +37,11 @@ export function CatalogCard({
             {product.code}
           </p>
           <div className="flex flex-wrap justify-end gap-2 text-[#8b242b]">
-            {product.tags.map((tag) => (
-              <span key={tag} className="rounded-full bg-[#fcf0ed] px-2 py-1">
-                ❖ {tag}
+            {product.categoryName && (
+              <span className="rounded-full bg-[#fcf0ed] px-2 py-1">
+                ❖ {product.categoryName}
               </span>
-            ))}
+            )}
           </div>
         </div>
         <h2 className="mb-2 mt-2 text-lg font-bold leading-snug text-[#701019]">
@@ -69,7 +69,7 @@ export function CatalogCard({
             target="_blank"
             rel="noreferrer"
             aria-label={`Đặt lịch thử ${product.name} qua Zalo`}
-            className="flex min-h-8 min-w-0 items-center justify-center gap-1 rounded-lg bg-[#80151c] px-2 text-white hover:bg-[#650c13]"
+            className="flex min-h-8 min-w-0 items-center justify-center gap-1 rounded-lg bg-[#80151c] border !border-[#b8872e] px-2 text-white hover:bg-[#650c13]"
           >
             <Icon name="calendar" className="!h-3.5 !w-3.5 shrink-0" />
             Đặt lịch

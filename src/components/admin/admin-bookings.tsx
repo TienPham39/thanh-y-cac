@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
 import ConfirmDialog from "./confirm-dialog";
 import { Icon } from "../icon";
 import { paginationItems } from "@/lib/admin-pagination";
@@ -9,6 +11,7 @@ type Booking = {
   id: string;
   productCode: string;
   productName: string;
+  productImage?: string | null;
   name: string;
   phone: string;
   start: string;
@@ -30,6 +33,7 @@ export default function AdminBookings() {
     );
   }, []);
   const [pageSize, setPageSize] = useState(6);
+  const [summary, setSummary] = useState<{ total: number; deposited: number; cancelled: number } | null>(null);
   const [data, setData] = useState<Booking[]>([]),
     [page, setPage] = useState(1),
     [total, setTotal] = useState(0),
@@ -51,6 +55,7 @@ export default function AdminBookings() {
         if (active) {
           setData(result.data);
           setTotal(result.total);
+          setSummary(result.summary);
           setPage(result.page);
           setError("");
         }
@@ -63,9 +68,11 @@ export default function AdminBookings() {
     setLoading(true);
     void load();
     const timer = setInterval(load, 15000);
+    window.addEventListener("rental-requests-updated", load);
     return () => {
       active = false;
       clearInterval(timer);
+      window.removeEventListener("rental-requests-updated", load);
     };
   }, [page, pageSize, requestId]);
   async function markRead(id: string) {
@@ -92,6 +99,7 @@ export default function AdminBookings() {
     action: "confirm" | "cancel" | "return";
   } | null>(null);
   const [confirmationError, setConfirmationError] = useState("");
+  const [closedOrder, setClosedOrder] = useState<Booking | null>(null);
   async function updateStatus(item: Booking, action: "confirm" | "cancel" | "return") {
     if (busy) return;
     setBusy(item.id);
@@ -118,6 +126,7 @@ export default function AdminBookings() {
       );
       window.dispatchEvent(new Event("rental-requests-updated"));
       setConfirmation(null);
+      if (action === "confirm") setClosedOrder(item);
     } catch (e) {
       setConfirmationError((e as Error).message);
     } finally {
@@ -126,8 +135,19 @@ export default function AdminBookings() {
   }
   const date = (value: string) => value.split("-").reverse().join("/");
   return (
-    <AdminShell title="Đặt lịch thuê">
+    <AdminShell title="Đặt lịch thuê" actions={<Link href="/admin/dat-lich/tao-don/" className={`${buttonStyle} !bg-[#80151c] border !border-[#b8872e] !text-white`}>+ Tạo đơn thuê</Link>}>
+      <section aria-label="Thống kê đơn thuê" className="mb-5 grid gap-4 sm:grid-cols-3">
+        {([
+          { key: "total", label: "Tổng số đơn", icon: "orders", tone: "bg-[#fcf0ed] text-[#80151c]" },
+          { key: "deposited", label: "Đơn đã cọc", icon: "orderConfirmed", tone: "bg-green-50 text-green-700" },
+          { key: "cancelled", label: "Đơn đã hủy", icon: "orderCancelled", tone: "bg-red-50 text-red-700" },
+        ] as const).map(item => <div key={item.key} className="flex items-center gap-4 rounded-md border border-[#e7e6e9] bg-white p-5">
+          <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${item.tone}`}><Icon name={item.icon} className="!h-6 !w-6" /></span>
+          <div><p className="text-sm text-[#61575c]">{item.label}</p><p className="mt-1 text-3xl font-semibold text-[#80151c]">{summary ? summary[item.key].toLocaleString("vi-VN") : "—"}</p></div>
+        </div>)}
+      </section>
       <ConfirmDialog
+        appearance={confirmation?.action === "confirm" ? "transaction" : "default"}
         open={confirmation !== null}
         title={
           confirmation?.action === "confirm"
@@ -158,6 +178,17 @@ export default function AdminBookings() {
             void updateStatus(confirmation.item, confirmation.action);
         }}
       />
+      <ConfirmDialog
+        open={closedOrder !== null}
+        appearance="transaction"
+        completed
+        tone="primary"
+        title="Chốt đơn thành công"
+        description={closedOrder ? `Đã xác nhận cọc và giữ lịch ${closedOrder.productCode} cho ${closedOrder.name}, từ ${date(closedOrder.start)} đến ${date(closedOrder.end)}.` : ""}
+        confirmLabel="Hoàn tất"
+        onConfirm={() => setClosedOrder(null)}
+        onCancel={() => setClosedOrder(null)}
+      />
       {requestId && (
         <a
           href="/admin/dat-lich"
@@ -180,30 +211,12 @@ export default function AdminBookings() {
           {data.map((item) => (
             <article
               key={item.id}
-              className="rounded-md border border-stone-200 bg-white p-5"
+              className="relative rounded-md border border-stone-200 bg-white p-5"
             >
-              <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between xl:block">
+              <dl className="grid min-w-0 flex-1 gap-4 text-sm sm:grid-cols-2 xl:[&>div:nth-child(even)]:pr-44">
                 <div>
-                  <h2 className="font-semibold">
-                    {item.productCode} · {item.productName}
-                  </h2>
-                  <p className="mt-1 text-xs text-stone-500">
-                    {new Date(item.createdAt).toLocaleString("vi-VN")} ·{" "}
-                    {item.readAt ? "Đã xem" : "Yêu cầu mới"}
-                  </p>
-                </div>
-                {!item.readAt && (
-                  <button
-                    className={buttonStyle}
-                    onClick={() => markRead(item.id)}
-                  >
-                    Đánh dấu đã xem
-                  </button>
-                )}
-              </div>
-              <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-                <div>
-                  <dt className="text-stone-500">Khách hàng</dt>
+                  <dt className="font-medium text-[#9a6d16]">Khách hàng</dt>
                   <dd>
                     {item.name} ·{" "}
                     <a className="underline" href={`tel:${item.phone}`}>
@@ -212,43 +225,67 @@ export default function AdminBookings() {
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-stone-500">Ngày nhận — trả</dt>
+                  <dt className="font-medium text-[#9a6d16]">Ngày nhận — trả</dt>
                   <dd>
                     {date(item.start)} — {date(item.end)}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-stone-500">Số đo</dt>
+                  <dt className="font-medium text-[#9a6d16]">Số đo</dt>
                   <dd>
                     {item.height ?? "—"} cm · {item.weight ?? "—"} kg
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-stone-500">Ghi chú</dt>
+                  <dt className="font-medium text-[#9a6d16]">Ghi chú</dt>
                   <dd className="whitespace-pre-wrap break-words">
                     {item.note || "Không có"}
                   </dd>
                 </div>
               </dl>
-              <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-stone-100 pt-4">
-                {item.priceSnapshot ? <div className="w-full rounded-md bg-stone-50 p-3 text-sm">
+                {!item.readAt && (
+                  <button
+                    className={`${buttonStyle} shrink-0 self-end sm:self-start xl:absolute xl:right-5 xl:top-5`}
+                    onClick={() => markRead(item.id)}
+                  >
+                    Đánh dấu đã xem
+                  </button>
+                )}
+              </div>
+              <div className="mt-4 grid items-start gap-4 xl:grid-cols-2">
+                <div className="flex min-w-0 items-start gap-4">
+                  {item.productImage && <Image unoptimized src={item.productImage} alt={item.productName} width={96} height={120} className="h-[120px] w-24 shrink-0 rounded-[2px] bg-stone-50 object-contain" />}
+                  <div className="min-w-0">
+                  <h2 className="font-semibold">
+                    {item.productCode} · {item.productName}
+                  </h2>
+                  <p className="mt-1 text-xs text-stone-500">
+                    {new Date(item.createdAt).toLocaleString("vi-VN")} ·{" "}
+                    {item.readAt ? "Đã xem" : "Yêu cầu mới"}
+                  </p>
+                  </div>
+                </div>
+                {item.priceSnapshot ? <div className="rounded-[2px] bg-stone-50 p-3 text-sm">
                   <p>Tổng tiền thuê: <strong>{item.priceSnapshot.total.toLocaleString("vi-VN")}đ</strong> · {item.priceSnapshot.days} ngày</p>
                   <p>{item.depositConfirmedAt ? "Cọc đã xác nhận" : "Cọc giữ lịch dự kiến"}: {item.priceSnapshot.deposit.toLocaleString("vi-VN")}đ</p>
                   <p>{item.depositConfirmedAt ? "Còn thanh toán" : "Còn thanh toán sau khi cọc"}: {item.priceSnapshot.remaining.toLocaleString("vi-VN")}đ</p>
-                </div> : <p className="w-full text-xs text-stone-500">Đơn cũ chưa có bảng giá lưu. Liên hệ khách để đối chiếu.</p>}
-                <span
+                </div> : <p className="text-xs text-stone-500">Đơn cũ chưa có bảng giá lưu. Liên hệ khách để đối chiếu.</p>}
+
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-stone-100 pt-4">
+                {item.status !== "pending" && <span
                   className={`inline-flex rounded-md px-2.5 py-1 text-sm font-semibold ${item.status === "confirmed" ? "bg-emerald-100 text-emerald-800" : item.status === "cancelled" ? "bg-red-100 text-red-800" : "bg-stone-100 text-stone-700"}`}
                 >
                   {item.status === "confirmed"
                     ? "Đã nhận cọc · Đã khóa lịch"
                     : item.status === "cancelled"
                       ? "Đã hủy"
-                      : item.status === "completed" ? "Đã nhận lại đồ" : "Chờ xác nhận cọc"}
-                </span>
+                      : item.status === "completed" ? "Đã nhận lại đồ" : ""}
+                </span>}
                 {item.status === "pending" && (
                   <button
                     disabled={busy !== null}
-                    className={`${buttonStyle} !bg-[#781216] !text-white`}
+                    className={`${buttonStyle} !border-[#b8872e] !bg-[#781216] border !border-[#b8872e] !text-white hover:!border-[#d4a84b]`}
                     onClick={() => {
                       setConfirmationError("");
                       setConfirmation({ item, action: "confirm" });
@@ -258,7 +295,7 @@ export default function AdminBookings() {
                   </button>
                 )}
                 {item.returnedAt && <span className="text-xs text-stone-500">Nhận lại: {new Date(item.returnedAt).toLocaleString("vi-VN")}</span>}
-                {item.status === "confirmed" && <button disabled={busy !== null} className={`${buttonStyle} !bg-[#781216] !text-white`} onClick={() => { setConfirmationError(""); setConfirmation({ item, action: "return" }); }}>Đã nhận lại đồ</button>}
+                {item.status === "confirmed" && <button disabled={busy !== null} className={`${buttonStyle} !bg-[#781216] border !border-[#b8872e] !text-white`} onClick={() => { setConfirmationError(""); setConfirmation({ item, action: "return" }); }}>Đã nhận lại đồ</button>}
                 {(item.status === "pending" || item.status === "confirmed") && (
                   <button
                     disabled={busy !== null}
@@ -312,7 +349,7 @@ export default function AdminBookings() {
                   aria-current={page === item ? "page" : undefined}
                   disabled={loading}
                   onClick={() => setPage(item)}
-                  className={`flex h-11 w-11 items-center justify-center rounded-xl border text-sm transition disabled:opacity-50 ${page === item ? "border-[#781216] bg-[#781216] font-semibold text-white" : "border-[#e7d5d1] text-[#34343e] hover:bg-[#fcf0ed]"}`}
+                  className={`flex h-11 w-11 items-center justify-center rounded-xl border text-sm transition disabled:opacity-50 ${page === item ? "border-[#781216] bg-[#781216] border !border-[#b8872e] font-semibold text-white" : "border-[#e7d5d1] text-[#34343e] hover:bg-[#fcf0ed]"}`}
                 >
                   {item}
                 </button>

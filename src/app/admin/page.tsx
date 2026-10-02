@@ -1,2 +1,2 @@
-import AdminProducts from "@/components/admin/admin-products";
-export default function Page() { return <AdminProducts/>; }
+import AdminDashboard from "@/components/admin/admin-dashboard";
+export default function Page() { return <AdminDashboard/>; }

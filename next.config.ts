@@ -7,6 +7,8 @@ export default function nextConfig(phase: string): NextConfig {
     distDir: phase === PHASE_DEVELOPMENT_SERVER ? ".next-dev" : ".next",
     ...(phase === PHASE_DEVELOPMENT_SERVER ? {} : { output: "export" as const }),
     trailingSlash: true,
+    // Old local builds cached the opposite redirect; accept both forms in dev.
+    skipTrailingSlashRedirect: phase === PHASE_DEVELOPMENT_SERVER,
     images: { unoptimized: true },
     poweredByHeader: false,
     ...(phase === PHASE_DEVELOPMENT_SERVER ? { async rewrites() {

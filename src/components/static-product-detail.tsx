@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api-fetch";
-import type { CatalogProduct, CatalogResponse } from "@/lib/catalog-types";
+import type { CatalogCategory, CatalogProduct, CatalogResponse } from "@/lib/catalog-types";
+import { selectRelatedProducts } from "@/lib/related-products";
 import ProductDetailPage from "./product-detail-page";
 
 export default function StaticProductDetail() {
@@ -34,13 +35,21 @@ function Detail({ slug }: { slug: string }) {
         if (abort.signal.aborted) return;
         setProduct(body.data);
         // Related items are optional; a failed list request must not hide the product.
-        const query = new URLSearchParams({ category: body.data.categorySlug, pageSize: "5" });
         try {
-          const list = await apiFetch(`/api/products?${query}`, { signal: abort.signal });
-          if (list.ok) {
-            const items: CatalogResponse = await list.json();
-            if (!abort.signal.aborted) setRelated(items.data.filter(item => item.slug !== slug).slice(0, 4));
-          }
+          const categoriesResponse = await apiFetch("/api/product-categories", { signal: abort.signal });
+          if (!categoriesResponse.ok) return;
+          const categories: { data: CatalogCategory[] } = await categoriesResponse.json();
+          const groups = await Promise.all(categories.data.filter(category => category.count > 0).map(async category => {
+            // Two candidates allow excluding the current product in its category.
+            const query = new URLSearchParams({ category: category.slug, pageSize: "2" });
+            try {
+              const list = await apiFetch(`/api/products?${query}`, { signal: abort.signal });
+              if (!list.ok) return [];
+              const items: CatalogResponse = await list.json();
+              return items.data;
+            } catch { return []; }
+          }));
+          if (!abort.signal.aborted) setRelated(selectRelatedProducts(groups.flat(), slug));
         } catch { /* Keep the product visible when related items are unavailable. */ }
       } catch (error) {
         if (!abort.signal.aborted) setError(error instanceof Error ? error.message : "Chưa tải được trang phục.");

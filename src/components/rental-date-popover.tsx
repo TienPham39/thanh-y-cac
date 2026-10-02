@@ -42,7 +42,7 @@ export function RentalDatePopover({ range, onChange, price, extraDay, deposit, a
     onBlur={event => { if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}
     onKeyDown={event => { if (event.key === "Escape" && open) { event.preventDefault(); close(); } }}>
     <div className="flex flex-wrap items-center justify-between gap-4">
-      <div><p className="text-sm font-semibold">Thuê trang phục</p><p className="mt-1 text-xs text-[#68635f]">{formatPrice(price)} / 24 giờ</p></div>
+      <div><p className="text-sm font-semibold">Trang phục</p><p className="mt-1 text-xs text-[#68635f]">{formatPrice(price)} / 24 giờ</p></div>
       <button ref={trigger} id="rental-date-trigger" type="button" aria-expanded={open} aria-controls="rental-calendar-popover"
         onClick={() => { if (open) close(); else { setDraft(range); setOpen(true); } }}
         className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md border border-[#d8c9c3] bg-white px-4 py-2.5 text-sm font-medium text-[#74131b] transition hover:border-[#80151c] hover:bg-[#fff8f6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#80151c]/30 sm:w-auto">
@@ -61,7 +61,7 @@ export function RentalDatePopover({ range, onChange, price, extraDay, deposit, a
       <RentalPriceSummary range={draft} price={price} extraDay={extraDay} deposit={deposit} accessoryFee={accessoryFee} />
       <div className="mt-3 flex justify-end gap-3">
         <button type="button" onClick={close} className="min-h-10 rounded-md px-4 text-sm">Hủy</button>
-        <button type="button" disabled={availability !== "ready" || !rentalDayCount(draft.start, draft.end) || overlapsReservation(draft.start,draft.end,reserved)} onClick={() => { onChange(draft); close(); }} className="min-h-10 rounded-md bg-[#80151c] px-6 text-sm font-semibold text-white hover:bg-[#590008] disabled:cursor-not-allowed disabled:opacity-40">Áp dụng</button>
+        <button type="button" disabled={availability !== "ready" || !rentalDayCount(draft.start, draft.end) || overlapsReservation(draft.start,draft.end,reserved)} onClick={() => { onChange(draft); close(); }} className="min-h-10 rounded-md bg-[#80151c] border !border-[#b8872e] px-6 text-sm font-semibold text-white hover:bg-[#590008] disabled:cursor-not-allowed disabled:opacity-40">Áp dụng</button>
       </div>
     </div>}
   </div>;

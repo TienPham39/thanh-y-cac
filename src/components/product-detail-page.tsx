@@ -62,11 +62,11 @@ export default function ProductDetailPage({
           aria-label="Đường dẫn"
           className="mx-auto flex max-w-[1280px] 2xl:max-w-[1440px] flex-wrap items-center gap-2 px-4 py-3 text-xs text-[#68635f] sm:px-6"
         >
-          <Link href="/">Trang chủ</Link>
+          <Link href="/" className="transition-colors duration-200 hover:text-[#80151c] focus-visible:text-[#80151c] motion-reduce:transition-none">Trang chủ</Link>
           <span aria-hidden="true">›</span>
-          <Link href="/trang-phuc">Trang phục</Link>
+          <Link href="/trang-phuc" className="transition-colors duration-200 hover:text-[#80151c] focus-visible:text-[#80151c] motion-reduce:transition-none">Trang phục</Link>
           <span aria-hidden="true">›</span>
-          <Link href={`/trang-phuc?category=${product.categorySlug}`}>
+          <Link href={`/trang-phuc?category=${product.categorySlug}`} className="transition-colors duration-200 hover:text-[#80151c] focus-visible:text-[#80151c] motion-reduce:transition-none">
             {categories[product.categorySlug] ?? product.categorySlug}
           </Link>
           <span aria-hidden="true">›</span>
@@ -156,7 +156,7 @@ export default function ProductDetailPage({
                 href="https://zalo.me/0779312303"
                 target="_blank"
                 rel="noreferrer"
-                className="flex min-h-12 items-center justify-center gap-2 bg-[#80151c] px-4 text-sm font-semibold text-white hover:bg-[#590008]"
+                className="flex min-h-12 items-center justify-center gap-2 bg-[#80151c] border !border-[#b8872e] px-4 text-sm font-semibold text-white hover:bg-[#590008]"
               >
                 <Icon name="chat" className="!h-4 !w-4" />
                 Đặt thuê qua Zalo

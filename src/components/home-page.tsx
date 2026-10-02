@@ -4,13 +4,23 @@ import { HomeCollection } from "./home-collection";
 import { PageReveal } from "./page-reveal";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "./icon";
 import { rentalSteps } from "@/lib/home-data";
 
 const slides = ["banner-3.webp", "banner-1.webp", "banner-2.webp"];
 export default function HomePage() {
   const [slide, setSlide] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [interacting, setInteracting] = useState(false);
+
+  useEffect(() => {
+    if (paused || interacting) return;
+    const timer = window.setInterval(() => {
+      if (!document.hidden) setSlide(current => (current + 1) % slides.length);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [slide, paused, interacting]);
 
   return (
     <>
@@ -23,6 +33,12 @@ export default function HomePage() {
           className="hero"
           aria-label="Trang phục cổ trang Thanh Y Các"
           aria-roledescription="băng chuyền"
+          onMouseEnter={() => setInteracting(true)}
+          onMouseLeave={() => setInteracting(false)}
+          onFocusCapture={() => setInteracting(true)}
+          onBlurCapture={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setInteracting(false);
+          }}
         >
           {slides.map((image, index) => (
             <Image
@@ -58,7 +74,7 @@ export default function HomePage() {
                 diễn sân khấu.
               </p>
               <div data-page-reveal className="hero-actions">
-                <a href="#bo-suu-tap" className="button button-primary">
+                <a href="#bo-suu-tap" className="button button-primary !border-[#b8872e]">
                   Khám phá trang phục
                 </a>
                 <a href="#quy-trinh" className="button button-gold">
@@ -80,33 +96,24 @@ export default function HomePage() {
                 </div>
               </dl>
             </div>
-            <div data-page-reveal className="slider-controls">
-              <button
-                aria-label="Banner trước"
-                onClick={() =>
-                  setSlide((slide + slides.length - 1) % slides.length)
-                }
-              >
-                <Icon name="chevron" className="rotate-180" />
-              </button>
-              <button
-                aria-label="Banner tiếp theo"
-                onClick={() => setSlide((slide + 1) % slides.length)}
-              >
-                <Icon name="chevron" />
-              </button>
-              <div className="slider-dots">
+            <div className="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2">
+              <div className="flex items-center gap-1" role="group" aria-label="Chọn ảnh banner">
                 {slides.map((_, index) => (
                   <button
                     key={index}
-                    className={slide === index ? "active" : ""}
+                    className="flex h-9 w-8 items-center justify-center rounded-[2px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                     aria-label={`Chuyển đến banner ${index + 1}`}
                     aria-pressed={slide === index}
                     onClick={() => setSlide(index)}
-                  />
+                  >
+                    <span aria-hidden="true" className={`h-4 w-4 rounded-full border-2 border-white/70 transition-colors motion-reduce:transition-none ${slide === index ? "bg-white border-white" : "bg-transparent hover:border-white"}`} />
+                  </button>
                 ))}
               </div>
-              <span className="sr-only" aria-live="polite">
+              <button type="button" onClick={() => setPaused(current => !current)} aria-label={paused ? "Tiếp tục tự động chuyển ảnh" : "Tạm dừng tự động chuyển ảnh"} aria-pressed={paused} className="flex h-9 w-9 items-center justify-center rounded-[2px] text-sm text-white/90 hover:bg-black/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
+                <span aria-hidden="true">{paused ? "▶" : "Ⅱ"}</span>
+              </button>
+              <span className="sr-only" aria-live={paused || interacting ? "polite" : "off"}>
                 Banner {slide + 1} trên {slides.length}
               </span>
             </div>

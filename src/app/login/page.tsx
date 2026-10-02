@@ -142,7 +142,7 @@ export default function LoginPage() {
                   Quên mật khẩu?
                 </button>
               </div>
-              <button disabled={submitting} className="!mt-6 h-12 w-full rounded border border-[#c69b50] bg-[#80151c] font-medium text-white hover:bg-[#650912] disabled:cursor-wait disabled:opacity-70 [@media(max-height:700px)]:!mt-4">
+              <button disabled={submitting} className="!mt-6 h-12 w-full rounded border border-[#c69b50] bg-[#80151c] border !border-[#b8872e] font-medium text-white hover:bg-[#650912] disabled:cursor-wait disabled:opacity-70 [@media(max-height:700px)]:!mt-4">
                 {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
               </button>
               {message && (

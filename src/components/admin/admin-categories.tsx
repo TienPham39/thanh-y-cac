@@ -6,6 +6,7 @@ import AdminShell, {
   primaryStyle,
 } from "./admin-shell";
 import ConfirmDialog from "./confirm-dialog";
+import ToastViewport, { type ToastItem } from "./toast";
 import { Icon } from "../icon";
 import type { AdminCategory } from "@/lib/admin-categories";
 
@@ -82,11 +83,11 @@ export default function AdminCategories() {
     if (from < 0 || to < 0) return;
     next.splice(to, 0, next.splice(from, 1)[0]);
     setRows(next);
-    setBusy(true); setError(""); setMessage("");
+    setBusy(true); setError(""); setNotification(null);
     try {
       await request("PATCH", { order: next.map(row => row.slug) });
       setRows(await request());
-      setMessage("Đã lưu thứ tự danh mục.");
+      notifySuccess("Đã lưu thứ tự danh mục.");
     } catch (cause) { setRows(rows); setError(cause instanceof Error ? cause.message : "Không lưu được thứ tự."); }
     finally { setBusy(false); }
   }
@@ -95,7 +96,10 @@ export default function AdminCategories() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
+  const [notification, setNotification] = useState<ToastItem | null>(null);
+  function notifySuccess(message: string) {
+    setNotification({ id: crypto.randomUUID(), message, tone: "success" });
+  }
   const [query, setQuery] = useState("");
   const [deleting, setDeleting] = useState<AdminCategory | null>(null);
   async function load() {
@@ -118,14 +122,14 @@ export default function AdminCategories() {
     if (busy) return;
     setBusy(true);
     setError("");
-    setMessage("");
+    setNotification(null);
     try {
       await request(method, data);
       setRows(await request());
       setForm(empty);
       setEditing(false);
       setDeleting(null);
-      setMessage(method === "DELETE" ? "Đã xóa danh mục." : "Đã lưu danh mục.");
+      notifySuccess(method === "DELETE" ? "Đã xóa danh mục." : "Đã lưu danh mục.");
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "Không lưu được danh mục.",
@@ -151,14 +155,10 @@ export default function AdminCategories() {
           </button>
         </div>
       )}
-      {message && (
-        <p
-          role="status"
-          className="mb-4 rounded-lg bg-green-50 p-4 text-sm text-green-800"
-        >
-          {message}
-        </p>
-      )}
+      <ToastViewport
+        items={notification ? [notification] : []}
+        onDismiss={(id) => setNotification((current) => current?.id === id ? null : current)}
+      />
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <section className="min-w-0 rounded-lg border border-[#e7e6e9] bg-white p-5">
           <h2 className="mb-4 text-lg font-semibold text-[#80151c]">

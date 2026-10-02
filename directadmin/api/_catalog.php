@@ -63,6 +63,7 @@ function product(array $row): array
         'deposit' => isset($row['deposit']) ? (int)$row['deposit'] : null,
         'accessoryFee' => isset($row['accessoryFee']) ? (int)$row['accessoryFee'] : null,
         'categorySlug' => $row['categorySlug'],
+        'categoryName' => $row['categoryName'],
         'gender' => $row['gender'],
         'availability' => !empty($row['isRented']) ? 'rented' : 'available',
         'minHeight' => (int) $row['minHeight'],
@@ -157,7 +158,7 @@ function listProducts(PDO $db): never
     $count->execute($bindings);
     $total = (int) $count->fetchColumn();
 
-    $fields = "cp.*, EXISTS(SELECT 1 FROM RentalRequest r WHERE r.productSlug = cp.slug AND r.status = 'confirmed') AS isRented";
+    $fields = "cp.*, pc.name AS categoryName, EXISTS(SELECT 1 FROM RentalRequest r WHERE r.productSlug = cp.slug AND r.status = 'confirmed') AS isRented";
     $statement = $db->prepare("SELECT {$fields} FROM CostumeProduct cp JOIN ProductCategory pc ON pc.slug = cp.categorySlug WHERE {$whereSql} ORDER BY {$orders[$sort]}, cp.slug ASC LIMIT :limit OFFSET :offset");
     foreach ($bindings as $key => $value) $statement->bindValue(":" . $key, $value);
     $statement->bindValue(':limit', $pageSize, PDO::PARAM_INT);
@@ -178,7 +179,7 @@ function listCategories(PDO $db): never
 function productDetail(PDO $db, string $slug): never
 {
     if (!preg_match('/^[a-z0-9-]{1,100}$/', $slug)) respond(['error' => ['code' => 'NOT_FOUND', 'message' => 'Không tìm thấy trang phục.']], 404);
-    $statement = $db->prepare("SELECT cp.*, EXISTS(SELECT 1 FROM RentalRequest r WHERE r.productSlug = cp.slug AND r.status = 'confirmed') AS isRented FROM CostumeProduct cp WHERE cp.slug = :slug AND cp.published = 1 LIMIT 1");
+    $statement = $db->prepare("SELECT cp.*, pc.name AS categoryName, EXISTS(SELECT 1 FROM RentalRequest r WHERE r.productSlug = cp.slug AND r.status = 'confirmed') AS isRented FROM CostumeProduct cp JOIN ProductCategory pc ON pc.slug = cp.categorySlug WHERE cp.slug = :slug AND cp.published = 1 LIMIT 1");
     $statement->execute(['slug' => $slug]);
     $row = $statement->fetch();
     if (!$row) respond(['error' => ['code' => 'NOT_FOUND', 'message' => 'Không tìm thấy trang phục.']], 404);

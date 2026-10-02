@@ -68,7 +68,7 @@ export function HomeCollection() {
           <AnimatedProductCard className="product-card" key={product.slug}>
             <Link href={productUrl(product.slug)} className="product-picture" aria-label={`Xem ${product.name}`}>
               <Image src={product.image} alt={product.name} fill sizes="(max-width: 460px) 90vw, (max-width: 900px) 45vw, 23vw" />
-              {product.tags[0] && <span className="accessory">{product.tags[0]}</span>}
+              {product.categoryName && <span className="accessory">{product.categoryName}</span>}
             </Link>
             <div className="product-body">
               <p className="product-label">{categories.find(item => item.slug === product.categorySlug)?.name}</p>

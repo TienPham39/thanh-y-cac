@@ -28,18 +28,43 @@ function requireAdmin(): string
 {
     [$email, $hash] = adminCredentials();
     startSession();
-    $valid = ($_SESSION['email'] ?? null) === $email
+    $sessionEmail = (string)($_SESSION['email'] ?? '');
+    if ($sessionEmail !== '' && $sessionEmail !== $email) {
+        $user = internalUser($sessionEmail);
+        $hash = $user && $user['active'] ? $user['passwordHash'] . $user['sessionVersion'] : '';
+    }
+    $valid = $sessionEmail !== '' && $hash !== ''
         && ($_SESSION['expiresAt'] ?? 0) > time()
         && hash_equals(hash('sha256', $hash), (string)($_SESSION['credentialVersion'] ?? ''));
     session_write_close();
     if (!$valid) fail(401, 'UNAUTHORIZED', 'Vui lòng đăng nhập lại.');
+    return $sessionEmail;
+}
+
+function internalUser(string $email): array|false
+{
+    try { return sql(database(), 'SELECT * FROM InternalUser WHERE email = ?', [$email])->fetch(); }
+    catch (PDOException $e) { if ((int)($e->errorInfo[1] ?? 0) === 1146) return false; throw $e; }
+}
+
+function sessionIdentity(string $email): array
+{
+    [$admin] = adminCredentials();
+    $user = $email === $admin ? null : internalUser($email);
+    return ['email' => $email, 'name' => $user['name'] ?? 'Admin', 'role' => $email === $admin ? 'admin' : 'manager'];
+}
+
+function requireUserAdministrator(): string
+{
+    $email = requireAdmin();
+    if ($email !== adminCredentials()[0]) fail(403, 'FORBIDDEN', 'Chỉ quản trị viên được quản lý người dùng.');
     return $email;
 }
 
 function authSession(): never
 {
     $method = requireMethod('GET', 'POST', 'DELETE');
-    if ($method === 'GET') respond(['data' => ['email' => requireAdmin()]]);
+    if ($method === 'GET') respond(['data' => sessionIdentity(requireAdmin())]);
     requireOrigin();
     if ($method === 'DELETE') {
         startSession();
@@ -54,12 +79,20 @@ function authSession(): never
         || strlen($body['identifier']) > 191 || strlen($body['password']) > (password_get_info($hash)['algoName'] === 'bcrypt' ? 72 : 256)) fail(422, 'INVALID_REQUEST', 'Vui lòng nhập đúng email và mật khẩu.');
     // Never trust client-supplied X-Forwarded-For for throttling.
     rateLimit(database(), 'login:' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'), 5, 900);
+    $identifier = strtolower(trim($body['identifier']));
+    $enabled = true;
+    if ($identifier !== $email) {
+        $user = internalUser($identifier);
+        $enabled = $user && (bool)$user['active'];
+        if ($user) { $email = $user['email']; $hash = $user['passwordHash']; }
+    }
     $matches = password_verify($body['password'], $hash);
-    if (!$matches || strtolower(trim($body['identifier'])) !== $email) fail(401, 'INVALID_CREDENTIALS', 'Email hoặc mật khẩu không đúng.');
+    if (!$enabled || !$matches || $identifier !== $email) fail(401, 'INVALID_CREDENTIALS', 'Email hoặc mật khẩu không đúng.');
     startSession();
     session_regenerate_id(true);
-    $_SESSION = ['email' => $email, 'expiresAt' => time() + 28800, 'credentialVersion' => hash('sha256', $hash)];
+    $credential = isset($user) && $user ? $hash . $user['sessionVersion'] : $hash;
+    $_SESSION = ['email' => $email, 'expiresAt' => time() + 28800, 'credentialVersion' => hash('sha256', $credential)];
     session_write_close();
     sql(database(), 'DELETE FROM ApiRateLimit WHERE `key` = ?', [hash('sha256', 'login:' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'))]);
-    respond(['data' => ['email' => $email]]);
+    respond(['data' => sessionIdentity($email)]);
 }

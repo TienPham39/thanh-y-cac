@@ -142,7 +142,7 @@ export default function CatalogPage() {
                           params.get("category") === c.slug
                         : !params.has("category")
                     }
-                    className={`min-h-10 shrink-0 rounded-lg border px-3 text-sm font-semibold ${c.slug ? (params.getAll("category").length === 1 && params.get("category") === c.slug ? "border-[#80151c] bg-[#80151c] text-white" : "border-[#eddad2] bg-[#fdf5f2] text-[#66534c]") : !params.has("category") ? "border-[#80151c] bg-[#80151c] text-white" : "border-[#eddad2] text-[#66534c]"}`}
+                    className={`min-h-10 shrink-0 rounded-lg border px-3 text-sm font-semibold ${c.slug ? (params.getAll("category").length === 1 && params.get("category") === c.slug ? "border-[#80151c] bg-[#80151c] border !border-[#b8872e] text-white" : "border-[#eddad2] bg-[#fdf5f2] text-[#66534c]") : !params.has("category") ? "border-[#80151c] bg-[#80151c] border !border-[#b8872e] text-white" : "border-[#eddad2] text-[#66534c]"}`}
                   >
                     {c.name}{" "}
                     <span className="ml-1 opacity-80">({c.count})</span>
@@ -169,7 +169,7 @@ export default function CatalogPage() {
                   />
                   <button
                     aria-label="Tìm kiếm"
-                    className="flex w-16 shrink-0 items-center justify-center bg-[#80151c] text-white transition-colors hover:bg-[#650c13] focus-visible:!outline-offset-[-5px] sm:w-20"
+                    className="flex w-16 shrink-0 items-center justify-center bg-[#80151c] border !border-[#b8872e] text-white transition-colors hover:bg-[#650c13] focus-visible:!outline-offset-[-5px] sm:w-20"
                   >
                     <Icon name="search" className="!h-6 !w-6" />
                   </button>
@@ -261,7 +261,7 @@ export default function CatalogPage() {
                     <p>{error}</p>
                     <button
                       onClick={() => setRetry((n) => n + 1)}
-                      className="mt-4 rounded-lg bg-[#80151c] px-5 py-3 text-white"
+                      className="mt-4 rounded-lg bg-[#80151c] border !border-[#b8872e] px-5 py-3 text-white"
                     >
                       Thử lại
                     </button>
@@ -316,7 +316,7 @@ export default function CatalogPage() {
                     </p>
                     <button
                       onClick={reset}
-                      className="rounded-lg bg-[#80151c] px-5 py-3 text-white"
+                      className="rounded-lg bg-[#80151c] border !border-[#b8872e] px-5 py-3 text-white"
                     >
                       Xóa bộ lọc
                     </button>
@@ -356,7 +356,7 @@ export default function CatalogPage() {
                                 scroll: false,
                               });
                             }}
-                            className={`h-11 min-w-11 rounded-lg border border-[#eddad2] ${result.pagination.page === page ? "bg-[#80151c] text-white" : "bg-white text-[#80151c]"}`}
+                            className={`h-11 min-w-11 rounded-lg border border-[#eddad2] ${result.pagination.page === page ? "bg-[#80151c] border !border-[#b8872e] text-white" : "bg-white text-[#80151c]"}`}
                           >
                             {page}
                           </button>

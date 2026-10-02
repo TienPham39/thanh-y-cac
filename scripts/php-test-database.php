@@ -28,6 +28,9 @@ $statisticsMigration = file_get_contents(dirname(__DIR__) . '/directadmin/migrat
 $db->exec($statisticsMigration);
 $db->exec($statisticsMigration);
 $directory = getenv('TYC_PRIVATE_DIR');
+$usersMigration = file_get_contents(dirname(__DIR__) . '/directadmin/migrations/007-internal-users.sql');
+$db->exec($usersMigration);
+$db->exec($usersMigration);
 if (!is_dir($directory)) mkdir($directory, 0700, true);
 file_put_contents($directory . '/config.php', '<?php return ' . var_export([
     'adminEmail' => 'test@example.com', 'adminPasswordHash' => password_hash('local-test-password', PASSWORD_DEFAULT),

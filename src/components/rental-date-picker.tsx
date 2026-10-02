@@ -112,7 +112,7 @@ export function RentalDatePicker({ value, onChange, today, reserved = [] }: {
               aria-pressed={inRange || selected} aria-current={date === today ? "date" : undefined}
               onClick={() => choose(date)} onKeyDown={event => onKeyDown(event, date)}
               onFocus={() => setFocused(date)}
-              className={`${booked ? "line-through bg-red-50 text-red-800 cursor-not-allowed" : ""} relative flex min-h-9 w-full items-center justify-center rounded-lg text-sm tabular-nums transition-colors focus-visible:z-10 disabled:cursor-not-allowed disabled:text-[#b6a39e] ${selected ? "bg-[#80151c] font-semibold text-white" : inRange ? "font-medium text-[#684714] hover:bg-[#efd098]" : `${outside ? "text-[#8b7770]" : "text-[#3f2724]"} enabled:hover:bg-white`} ${date === today && !selected ? "ring-1 ring-inset ring-[#a87836]" : ""}`}>
+              className={`${booked ? "line-through bg-red-50 text-red-800 cursor-not-allowed" : ""} relative flex min-h-9 w-full items-center justify-center rounded-lg text-sm tabular-nums transition-colors focus-visible:z-10 disabled:cursor-not-allowed disabled:text-[#b6a39e] ${selected ? "bg-[#80151c] border !border-[#b8872e] font-semibold text-white" : inRange ? "font-medium text-[#684714] hover:bg-[#efd098]" : `${outside ? "text-[#8b7770]" : "text-[#3f2724]"} enabled:hover:bg-white`} ${date === today && !selected ? "ring-1 ring-inset ring-[#a87836]" : ""}`}>
               {Number(date.slice(8))}
             </button>
           </div>;

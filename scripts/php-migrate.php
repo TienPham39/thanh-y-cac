@@ -16,3 +16,4 @@ $db->exec(file_get_contents(dirname(__DIR__) . '/directadmin/migrations/005-prod
 
 $db->exec(file_get_contents(dirname(__DIR__) . '/directadmin/migrations/006-product-statistics.sql'));
 echo "PHP API schema migration complete.\n";
+$db->exec(file_get_contents(dirname(__DIR__) . '/directadmin/migrations/007-internal-users.sql'));

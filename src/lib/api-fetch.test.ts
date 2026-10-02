@@ -2,6 +2,17 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { apiFetch } from "./api-fetch.ts";
 
+test("catalog requests bypass cached redirects and stale responses", async () => {
+  const original = globalThis.fetch;
+  try {
+    globalThis.fetch = async (_path, init) => {
+      assert.equal(init?.cache, "no-store");
+      return Response.json({ data: [] });
+    };
+    await apiFetch("/api/product-categories");
+  } finally { globalThis.fetch = original; }
+});
+
 test("HTML error pages produce a readable message instead of a JSON parsing exception", async () => {
   const original = globalThis.fetch;
   try {

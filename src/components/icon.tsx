@@ -1,4 +1,7 @@
 export type IconName =
+  | "orders"
+  | "orderConfirmed"
+  | "orderCancelled"
   | "bell"
   | "dashboard"
   | "calendar"
@@ -30,6 +33,9 @@ export type IconName =
   | "trash";
 
 const paths: Record<IconName, React.ReactNode> = {
+  orders: <><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V2h6v2M9 9h6M9 13h6M9 17h4" /></>,
+  orderConfirmed: <><path d="M14 21H5V3h10l4 4v5M14 3v5h5M8 12h4M8 16h3" /><circle cx="17" cy="17" r="5" /><path d="m14.5 17 1.5 1.5 3.5-3.5" /></>,
+  orderCancelled: <><path d="M14 21H5V3h10l4 4v5M14 3v5h5M8 12h4M8 16h3" /><circle cx="17" cy="17" r="5" /><path d="m15.5 15.5 3 3m-3 0 3-3" /></>,
   bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></>,
   dashboard: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
   edit: <><path d="m14.5 5.5 4 4M4 20l4.2-.9L19 8.3a2.1 2.1 0 0 0-3-3L5.2 16.1 4 20Z" /></>,

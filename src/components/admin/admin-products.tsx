@@ -440,7 +440,18 @@ export default function AdminProducts({
     if (id === "publication-success") setPublicationMessage("");
   }
   return (
-    <AdminShell title={headerTitle}>
+    <AdminShell title={headerTitle} actions={!editing && !editor ? (<>
+                <button onClick={exportData} className={buttonStyle}>
+                  ↓ Xuất dữ liệu
+                </button>
+                <button
+                  disabled={!categoryRows.length}
+                  onClick={() => setEditing(newProduct(products, categoryRows))}
+                  className={primaryStyle}
+                >
+                  ＋ Thêm trang phục
+                </button>
+              </>) : undefined}>
       <ToastViewport items={notifications} onDismiss={dismissNotification} />
       {!loaded ? (
         <p role="status" className="py-20 text-center">
@@ -501,18 +512,7 @@ export default function AdminProducts({
               <h2 className="text-xl font-bold text-[#80151c]">
                 Danh sách trang phục
               </h2>
-              <div className="flex flex-wrap gap-2">
-                <button onClick={exportData} className={buttonStyle}>
-                  ↓ Xuất dữ liệu
-                </button>
-                <button
-                  disabled={!categoryRows.length}
-                  onClick={() => setEditing(newProduct(products, categoryRows))}
-                  className={primaryStyle}
-                >
-                  ＋ Thêm trang phục
-                </button>
-              </div>
+
             </div>
             <div className="relative z-10 grid gap-3 border-t border-[#efedf0] px-5 py-3 sm:grid-cols-2 xl:grid-cols-[1.3fr_1fr_1fr_1.3fr]">
               <label className="relative">
@@ -651,7 +651,7 @@ export default function AdminProducts({
                           height={800}
                           src={p.images[0] || "/images/logo2.png"}
                           alt={p.name}
-                          className="h-[62px] w-14 rounded object-cover"
+                          className="h-[120px] w-24 rounded bg-[#faf7f5] object-contain"
                         />
                       </td>
                       <td className="whitespace-nowrap px-3">{p.code}</td>
@@ -776,7 +776,7 @@ export default function AdminProducts({
                         aria-label={`Trang ${item}`}
                         aria-current={item === currentPage ? "page" : undefined}
                         onClick={() => setPage(item)}
-                        className={`flex h-11 min-w-11 items-center justify-center rounded-xl border px-3 text-sm font-medium transition ${item === currentPage ? "border-[#80151c] bg-[#80151c] text-white" : "border-[#e5d8d5] bg-white text-[#51474c] hover:border-[#80151c] hover:text-[#80151c]"}`}
+                        className={`flex h-11 min-w-11 items-center justify-center rounded-xl border px-3 text-sm font-medium transition ${item === currentPage ? "border-[#80151c] bg-[#80151c] border !border-[#b8872e] text-white" : "border-[#e5d8d5] bg-white text-[#51474c] hover:border-[#80151c] hover:text-[#80151c]"}`}
                       >
                         {item}
                       </button>

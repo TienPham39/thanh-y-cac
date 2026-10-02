@@ -150,7 +150,7 @@ export default function SiteLayout({
               }
               onClick={() => setMenuOpen(false)}
             >
-              Thuê trang phục
+              Trang phục
               {!home && (
                 <span
                   aria-hidden="true"
@@ -187,7 +187,7 @@ export default function SiteLayout({
               alt=""
             />
             <button
-              className="button button-primary header-booking font-['Inter'] !border-[#B88632]"
+              className="button button-primary !border-[#b8872e] header-booking font-['Inter'] !border-[#B88632]"
               onClick={() => setPanel({ kind: "booking" })}
             >
               <Icon name="calendar" className="text-[#FFDEAC]" />
@@ -370,7 +370,7 @@ export default function SiteLayout({
                 href="https://zalo.me/0779312303"
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-lg bg-[#80151c] px-4 py-3 text-sm text-white"
+                className="rounded-lg bg-[#80151c] border !border-[#b8872e] px-4 py-3 text-sm text-white"
               >
                 Nhắn Zalo
               </a>

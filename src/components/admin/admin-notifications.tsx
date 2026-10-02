@@ -141,7 +141,7 @@ export default function AdminNotifications() {
             </span>
           </div>
           <div
-            className="max-h-96 min-h-0 overflow-y-auto overscroll-contain"
+            className="max-h-96 min-h-0 overflow-y-auto overscroll-contain [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#781216] [&::-webkit-scrollbar-button]:hidden [&::-webkit-scrollbar-button]:h-0 [&::-webkit-scrollbar-button]:w-0"
             aria-busy={loading}
           >
             {loading ? (
@@ -164,10 +164,12 @@ export default function AdminNotifications() {
             ) : (
               <ul className="divide-y divide-[#e8e1dc]">
                 {items.map((item) => (
-                  <li
-                    key={item.id}
-                    className={`px-4 py-3 ${item.readAt ? "bg-white" : "bg-[#fff8f6]"}`}
-                  >
+                  <li key={item.id}>
+                    <a
+                      href={`/admin/dat-lich/?requestId=${encodeURIComponent(item.id)}`}
+                      onClick={() => setOpen(false)}
+                      className={`block px-4 py-3 transition-colors hover:bg-[#781216]/10 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#781216] ${item.readAt ? "bg-white" : "bg-[#fff8f6]"}`}
+                    >
                     <div className="flex items-start gap-2">
                       <p className="text-sm font-semibold text-[#40383b]">
                         Yêu cầu thuê {item.productCode}
@@ -183,13 +185,13 @@ export default function AdminNotifications() {
                       {item.name} muốn thuê {item.productName} từ{" "}
                       {date(item.start)} đến {date(item.end)}.
                     </p>
-                    <p className="mt-1 text-xs text-[#781216]">
+                    {item.status !== "pending" && <p className="mt-1 text-xs text-[#781216]">
                       {item.status === "confirmed"
                         ? "Đã nhận cọc · Đã giữ lịch"
                         : item.status === "cancelled"
                           ? "Đã hủy"
-                          : "Chờ xác nhận cọc"}
-                    </p>
+                          : "Đã nhận lại đồ"}
+                    </p>}
                     <time
                       dateTime={item.createdAt}
                       className="mt-1 block text-[11px] text-[#938a90]"
@@ -198,6 +200,7 @@ export default function AdminNotifications() {
                         timeZone: "Asia/Ho_Chi_Minh",
                       })}
                     </time>
+                    </a>
                   </li>
                 ))}
               </ul>
