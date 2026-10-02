@@ -55,15 +55,29 @@ function uploadImage(): never
     requireAdmin();
     requireMethod('POST');
     requireOrigin();
-    $image = input(1500000)['image'] ?? null;
-    if (!is_string($image) || !preg_match('~^data:image/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$~D', $image, $matches)) fail(422, 'INVALID_IMAGE', 'Chỉ hỗ trợ ảnh JPG, PNG hoặc WebP.');
-    $bytes = base64_decode($matches[2], true);
+    if (str_starts_with(strtolower($_SERVER['CONTENT_TYPE'] ?? ''), 'multipart/form-data')) {
+        $file = $_FILES['image'] ?? null;
+        if (!is_array($file) || ($file['error'] ?? -1) !== UPLOAD_ERR_OK
+            || !is_string($file['tmp_name'] ?? null) || !is_uploaded_file($file['tmp_name'])
+            || !is_int($file['size'] ?? null) || $file['size'] < 1 || $file['size'] > 750000) {
+            fail(422, 'INVALID_IMAGE', 'Ảnh không hợp lệ hoặc vượt quá dung lượng cho phép.');
+        }
+        $bytes = file_get_contents($file['tmp_name']);
+        $info = $bytes !== false ? @getimagesizefromstring($bytes) : false;
+        $format = match ($info['mime'] ?? '') { 'image/jpeg' => 'jpeg', 'image/png' => 'png', 'image/webp' => 'webp', default => '' };
+    } else {
+        // Keep older deployed frontend clients compatible during rollout.
+        $image = input(1500000)['image'] ?? null;
+        if (!is_string($image) || !preg_match('~^data:image/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$~D', $image, $matches)) fail(422, 'INVALID_IMAGE', 'Chỉ hỗ trợ ảnh JPG, PNG hoặc WebP.');
+        $bytes = base64_decode($matches[2], true);
+        $format = $matches[1];
+    }
     $info = $bytes !== false ? @getimagesizefromstring($bytes) : false;
-    if (!$bytes || strlen($bytes) > 750000 || !$info || ($info['mime'] ?? '') !== 'image/' . $matches[1]
+    if (!$bytes || strlen($bytes) > 750000 || !$info || $format === '' || ($info['mime'] ?? '') !== 'image/' . $format
         || $info[0] > 12000 || $info[1] > 12000) fail(422, 'INVALID_IMAGE', 'Ảnh không hợp lệ hoặc vượt quá dung lượng cho phép.');
     $directory = appConfig()['privateDirectory'] . '/uploads';
     if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) throw new RuntimeException('Cannot create uploads directory');
-    $filename = uuid() . '.' . ($matches[1] === 'jpeg' ? 'jpg' : $matches[1]);
+    $filename = uuid() . '.' . ($format === 'jpeg' ? 'jpg' : $format);
     $handle = fopen($directory . '/' . $filename, 'xb');
     if (!$handle) throw new RuntimeException('Cannot store upload');
     try { if (fwrite($handle, $bytes) !== strlen($bytes)) throw new RuntimeException('Incomplete upload'); }

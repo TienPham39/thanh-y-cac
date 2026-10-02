@@ -129,6 +129,23 @@ try {
   await request('/api/admin/products', 'PATCH', {...product,images:['/uploads/../secret.php']},422);
   const png='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jF1kAAAAASUVORK5CYII=';
   const upload=(await request('/api/admin/uploads','POST',{image:png},201)).body.data.url;
+  async function multipartUpload(bytes, type, expected, options = {}) {
+    const form = new FormData();
+    form.set('image', new Blob([bytes], {type}), 'photo.webp');
+    const response = await fetch(base + '/api/admin/uploads', {method:'POST',headers:{Origin:options.origin ?? base,Cookie:options.anonymous?'':cookie},body:form});
+    const text = await response.text();
+    assert.equal(response.status, expected, text);
+    return JSON.parse(text);
+  }
+  const pngBytes = Buffer.from(png.split(',')[1], 'base64');
+  const multipart = await multipartUpload(pngBytes, 'image/png', 201);
+  assert.match(multipart.data.url, /^\/uploads\/[a-f0-9-]+\.png$/);
+  const servedPhoto = await fetch(base + multipart.data.url);
+  assert.deepEqual(Buffer.from(await servedPhoto.arrayBuffer()), pngBytes);
+  await multipartUpload(pngBytes, 'image/png', 401, {anonymous:true});
+  await multipartUpload(pngBytes, 'image/png', 403, {origin:'https://attacker.example'});
+  await multipartUpload(Buffer.from('<?php echo 1;'), 'image/png', 422);
+  await multipartUpload(Buffer.alloc(750001), 'image/png', 422);
   const image=await fetch(base+upload);assert.equal(image.status,200);assert.equal(image.headers.get('content-type'),'image/png');
   const components = {components:'Mũ Mông Cổ\nTrang sức Mông Cổ',componentImages:[upload,'']};
   await request('/api/admin/products','PATCH',{...product,...components});

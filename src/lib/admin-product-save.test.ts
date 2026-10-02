@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { uploadProductImages, saveRequest } from "./admin-product-save.ts";
+import { uploadProductImages, saveRequest, imageUploadForm } from "./admin-product-save.ts";
+
+test("uploads binary images as multipart without base64 JSON expansion", async () => {
+  const form = imageUploadForm("data:image/png;base64,AQIDBA==");
+  const image = form.get("image") as File;
+  assert.equal(image.type, "image/png");
+  assert.equal(image.size, 4);
+  assert.deepEqual([...new Uint8Array(await image.arrayBuffer())], [1, 2, 3, 4]);
+  assert.throws(() => imageUploadForm("data:text/html;base64,AQID"), /Ảnh/);
+});
 
 test("uploads gallery and accessory images together, limits concurrency and preserves positions", async () => {
   let active = 0, peak = 0;

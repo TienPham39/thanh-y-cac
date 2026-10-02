@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { saveRequest, uploadProductImages } from "@/lib/admin-product-save";
+import { imageUploadForm, saveRequest, uploadProductImages } from "@/lib/admin-product-save";
 import {
   AdminProduct,
   blankProduct,
@@ -70,8 +70,7 @@ async function uploadImage(image: string) {
   if (!image.startsWith("data:image/")) return image;
   const body = await saveRequest("/api/admin/uploads", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image }),
+    body: imageUploadForm(image),
   }, "Tải ảnh quá thời gian chờ. Ảnh đã tải thành công sẽ được giữ lại khi bạn thử lưu lại.");
   if (typeof body.data?.url !== "string")
     throw new Error(body.error?.message || "Chưa tải được ảnh lên máy chủ.");

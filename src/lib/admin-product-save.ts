@@ -1,3 +1,13 @@
+export function imageUploadForm(image: string) {
+  const match = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/.exec(image);
+  if (!match) throw new Error("Ảnh không đúng định dạng JPG, PNG hoặc WebP.");
+  const binary = atob(match[2]);
+  const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+  const form = new FormData();
+  form.set("image", new Blob([bytes], { type: `image/${match[1]}` }), `photo.${match[1] === "jpeg" ? "jpg" : match[1]}`);
+  return form;
+}
+
 export async function saveRequest(
   url: string,
   options: RequestInit,
