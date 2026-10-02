@@ -3,7 +3,7 @@ import ProductRentalCalendar from "./product-rental-calendar";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type { AdminProduct } from "@/lib/admin-products";
-import { badges, money, nextProductCode } from "@/lib/admin-products";
+import { badges, nextProductCode } from "@/lib/admin-products";
 import type { AdminCategory } from "@/lib/admin-categories";
 import {
   imageSelectionError,
@@ -99,12 +99,14 @@ export default function ProductEditor({
   existingProducts,
   categoryRows,
   save,
+  saveProgress = "",
   back,
 }: {
   initial: AdminProduct;
   existingProducts: AdminProduct[];
   categoryRows: AdminCategory[];
   save: (product: AdminProduct, draft: boolean) => Promise<AdminProduct | null>;
+  saveProgress?: string;
   back: () => void;
 }) {
   const categories = categoryRows.map((row) => row.name);
@@ -170,7 +172,6 @@ export default function ProductEditor({
     message: string;
     tone: ToastTone;
   } | null>(null);
-  const preview = useRef<HTMLDialogElement>(null);
   const imageInput = useRef<HTMLInputElement>(null);
   const set = <K extends keyof AdminProduct>(key: K, value: AdminProduct[K]) =>
     setP((old) => ({
@@ -317,7 +318,7 @@ export default function ProductEditor({
       });
     }
   }
-  async function submit(draft = false) {
+  async function submit() {
     if (saving) return;
     if (p.minHeight > p.maxHeight || p.minWeight > p.maxWeight) {
       setNotification({
@@ -368,24 +369,17 @@ export default function ProductEditor({
       ...normalizedComponents,
       slug,
       tags: p.category,
-      published: draft ? false : p.published,
+      published: p.published,
     };
     setSaving(true);
-    const savedProduct = await save(updated, draft);
+    const savedProduct = await save(updated, false);
     setSaving(false);
     if (savedProduct) {
       setP(savedProduct);
       setSaved(JSON.stringify(savedProduct));
       setComponentItems(parseProductComponents(savedProduct.components));
       setComponentImages(savedProduct.componentImages);
-      if (draft) {
-        setNotification({
-          message: "Đã lưu bản nháp trên trình duyệt.",
-          tone: "success",
-        });
-      } else {
-        back();
-      }
+      back();
     }
   }
   return (
@@ -409,29 +403,9 @@ export default function ProductEditor({
         >
           Quay lại danh sách
         </button>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
-          <button
-            type="submit"
-            disabled={saving}
-            onClick={(e) => {
-              if (e.currentTarget.form?.checkValidity()) {
-                e.preventDefault();
-                void submit(true);
-              }
-            }}
-            className={buttonStyle}
-          >
-            Lưu nháp
-          </button>
-          <button
-            type="button"
-            onClick={() => preview.current?.showModal()}
-            className={buttonStyle}
-          >
-            Xem trước
-          </button>
-          <button disabled={saving} className={`${primaryStyle} col-span-2`}>
-            {saving ? "Đang lưu…" : "✓ Lưu thay đổi"}
+        <div className="flex justify-end">
+          <button disabled={saving} className={primaryStyle}>
+            {saving ? saveProgress || "Đang lưu…" : "✓ Lưu thay đổi"}
           </button>
         </div>
       </div>
@@ -718,66 +692,10 @@ export default function ProductEditor({
       </div>
       <div className="mt-5 flex justify-end border-t border-[#e5e1df] pt-4">
         <button disabled={saving} className={primaryStyle}>
-          {saving ? "Đang lưu…" : "✓ Lưu thay đổi"}
+          {saving ? saveProgress || "Đang lưu…" : "✓ Lưu thay đổi"}
         </button>
       </div>
-      <dialog
-        aria-label="Xem trước nội dung trang phục"
-        ref={preview}
-        className="max-h-[90vh] w-[900px] max-w-[95vw] overflow-auto rounded-lg bg-[#fff8f5] p-6 text-[#563b36] backdrop:bg-black/40"
-      >
-        <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">
-            Xem trước nội dung trang phục
-          </h2>
-          <button
-            type="button"
-            className={buttonStyle}
-            onClick={() => preview.current?.close()}
-          >
-            Đóng
-          </button>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2">
-          {p.images[0] && (
-            <Image
-              unoptimized
-              width={640}
-              height={800}
-              src={p.images[0]}
-              alt={p.name}
-              className="max-h-[500px] w-full rounded object-cover"
-            />
-          )}
-          <div>
-            <p className="text-sm">
-              {p.code} · {p.category}
-            </p>
-            <h3 className="mt-3 text-2xl font-bold text-[#80151c]">{p.name}</h3>
-            <p className="my-5 text-2xl font-semibold text-[#80151c]">
-              {money(p.price)}{" "}
-              <span className="text-sm font-normal">/ 24 giờ</span>
-            </p>
-            <p className="text-sm leading-7">
-              Đặt cọc: {money(p.deposit)}
-              <br />
-              Ngày tiếp theo: {money(p.extraDay)}
-              <br />
-              Chiều cao: {p.minHeight}–{p.maxHeight} cm
-              <br />
-              Cân nặng: {p.minWeight}–{p.maxWeight} kg
-              <br />
-              Chất liệu: {p.material}
-              <br />
-              Phụ kiện: {p.accessories}
-            </p>
-            <p className="mt-5 leading-7">{p.description}</p>
-            <p className="mt-4 whitespace-pre-line text-sm leading-7">
-              {p.components}
-            </p>
-          </div>
-        </div>
-      </dialog>
+
       <ConfirmDialog
         open={leaveOpen}
         title="Rời trang chỉnh sửa?"

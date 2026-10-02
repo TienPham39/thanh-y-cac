@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { saveRequest, uploadProductImages } from "@/lib/admin-product-save";
 import {
   AdminProduct,
   blankProduct,
@@ -67,13 +68,12 @@ function productPayload(product: AdminProduct, published = product.published) {
 
 async function uploadImage(image: string) {
   if (!image.startsWith("data:image/")) return image;
-  const response = await fetch("/api/admin/uploads", {
+  const body = await saveRequest("/api/admin/uploads", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ image }),
-  });
-  const body = await response.json();
-  if (!response.ok || typeof body.data?.url !== "string")
+  }, "Tải ảnh quá thời gian chờ. Ảnh đã tải thành công sẽ được giữ lại khi bạn thử lưu lại.");
+  if (typeof body.data?.url !== "string")
     throw new Error(body.error?.message || "Chưa tải được ảnh lên máy chủ.");
   return body.data.url as string;
 }
@@ -105,6 +105,8 @@ export default function AdminProducts({
   const [serverCodes, setServerCodes] = useState<string[]>([]);
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
   const [deleting, setDeleting] = useState(false);
+  const [saveProgress, setSaveProgress] = useState("");
+  const uploadedImages = useRef(new Map<string, string>());
   useEffect(() => {
     const abort = new AbortController();
     let drafts = sampleProducts();
@@ -225,24 +227,18 @@ export default function AdminProducts({
         : !draftOnly;
     setError("");
     try {
-      const images = await Promise.all(p.images.map(uploadImage));
-      const componentImages = await Promise.all(
-        p.componentImages.map((image) =>
-          image ? uploadImage(image) : Promise.resolve(""),
-        ),
-      );
-      const savedProduct = { ...p, images, componentImages, published };
+      // Browser drafts do not need to wait for hosting or upload their images.
+      const storedImages = draftOnly ? { images: p.images, componentImages: p.componentImages }
+        : await uploadProductImages(p.images, p.componentImages, uploadedImages.current, uploadImage,
+          (done, total) => setSaveProgress(total ? `Đang tải ảnh ${done}/${total}…` : "Đang lưu thông tin…"));
+      const savedProduct = { ...p, ...storedImages, published };
       if (!draftOnly) {
-        const response = await fetch("/api/admin/products", {
+        setSaveProgress("Đang lưu thông tin…");
+        await saveRequest("/api/admin/products", {
           method: serverCodes.includes(p.code) ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(productPayload(savedProduct)),
-        });
-        const body = await response.json();
-        if (!response.ok)
-          throw new Error(
-            body.error?.message || "Chưa cập nhật được trang phục.",
-          );
+        }, "Máy chủ phản hồi quá lâu. Hãy kiểm tra danh sách trang phục trước khi thử lưu lại để tránh tạo trùng.", 30_000);
         if (!serverCodes.includes(p.code))
           setServerCodes((current) => [...current, p.code]);
       }
@@ -253,6 +249,7 @@ export default function AdminProducts({
           : [savedProduct, ...products.filter(row => row.id !== p.id)],
       );
       if (!persisted) return null;
+      uploadedImages.current.clear();
       if (!serverCodes.includes(p.code)) {
         setPage(1); setQuery(""); setCategory(""); setStatus(""); setPrice("");
       }
@@ -268,6 +265,8 @@ export default function AdminProducts({
           : "Chưa lưu được trang phục. Vui lòng thử lại.",
       );
       return null;
+    } finally {
+      setSaveProgress("");
     }
   }
   async function togglePublication(product: AdminProduct) {
@@ -464,6 +463,7 @@ export default function AdminProducts({
           categoryRows={categoryRows}
           existingProducts={products}
           save={save}
+          saveProgress={saveProgress}
           back={() => {
             setEditing(null);
             if (editor)
