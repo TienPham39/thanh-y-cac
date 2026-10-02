@@ -7,6 +7,13 @@ import { Icon } from "../icon";
 import { paginationItems } from "@/lib/admin-pagination";
 import AdminShell, { buttonStyle } from "./admin-shell";
 type Booking = {
+  checkoutId?: string | null;
+  paymentMethod?: string | null;
+  paymentState?: string | null;
+  paymentCode?: string | null;
+  transactionRef?: string | null;
+  reviewReason?: string | null;
+  onlinePayment?: number | null;
   priceSnapshot?: { total: number; deposit: number; remaining: number; days: number; price: number; extraDay: number; accessoryFee: number } | null;
   id: string;
   productCode: string;
@@ -269,6 +276,7 @@ export default function AdminBookings() {
                   <p>Tổng tiền thuê: <strong>{item.priceSnapshot.total.toLocaleString("vi-VN")}đ</strong> · {item.priceSnapshot.days} ngày</p>
                   <p>{item.depositConfirmedAt ? "Cọc đã xác nhận" : "Cọc giữ lịch dự kiến"}: {item.priceSnapshot.deposit.toLocaleString("vi-VN")}đ</p>
                   <p>{item.depositConfirmedAt ? "Còn thanh toán" : "Còn thanh toán sau khi cọc"}: {item.priceSnapshot.remaining.toLocaleString("vi-VN")}đ</p>
+                  {item.checkoutId && <div className="mt-2 border-t border-stone-200 pt-2 text-xs text-stone-500"><p>{item.onlinePayment ? "Cọc qua payOS" : "Cửa hàng xác nhận"} · Nội dung: TYC {item.paymentCode}</p>{item.onlinePayment && item.status === "pending" && <p className="mt-1">Chờ giao dịch được xác minh; hệ thống tự chốt khi nhận tiền hợp lệ.</p>}{item.transactionRef && <p className="mt-1">Mã giao dịch: {item.transactionRef}</p>}{item.reviewReason && <p className="mt-1 font-medium text-amber-800">{item.reviewReason}</p>}</div>}
                 </div> : <p className="text-xs text-stone-500">Đơn cũ chưa có bảng giá lưu. Liên hệ khách để đối chiếu.</p>}
 
               </div>
@@ -282,7 +290,7 @@ export default function AdminBookings() {
                       ? "Đã hủy"
                       : item.status === "completed" ? "Đã nhận lại đồ" : ""}
                 </span>}
-                {item.status === "pending" && (
+                {item.status === "pending" && !item.onlinePayment && (
                   <button
                     disabled={busy !== null}
                     className={`${buttonStyle} !border-[#b8872e] !bg-[#781216] border !border-[#b8872e] !text-white hover:!border-[#d4a84b]`}

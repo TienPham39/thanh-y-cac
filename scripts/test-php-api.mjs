@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { randomBytes, randomUUID } from 'node:crypto';
+import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -9,9 +9,10 @@ import net from 'node:net';
 // DB_USER needs CREATE/DROP DATABASE on a disposable local/CI database server.
 const privateDir = await mkdtemp(path.join(tmpdir(), 'tyc-php-test-'));
 const env = { ...process.env, DB_NAME: `tyc_test_${randomBytes(6).toString('hex')}`, TYC_PRIVATE_DIR: privateDir, APP_ENV: 'development' };
+env.PAYOS_CLIENT_ID='test-only'; env.PAYOS_API_KEY='test-only'; env.PAYOS_CHECKSUM_KEY='isolated-webhook-test-key';
 const php = process.env.PHP_BINARY || 'php';
-function setup(action) {
-  const result = spawnSync(php, ['scripts/php-test-database.php', action], { env, encoding: 'utf8' });
+function setup(action, ...args) {
+  const result = spawnSync(php, ['scripts/php-test-database.php', action, ...args], { env, encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr + result.stdout);
 }
 async function port() {
@@ -30,7 +31,8 @@ try {
   const base = `http://127.0.0.1:${ports[0]}`;
   env.APP_ORIGIN = base;
   for (const p of ports) {
-    const server = spawn(php, ['-S', `127.0.0.1:${p}`, '-t', 'public', 'scripts/php-router.php'], { env, stdio: 'ignore' });
+    const serverEnv=p===ports[1]?{...env,PAYOS_CLIENT_ID:'',PAYOS_API_KEY:'',PAYOS_CHECKSUM_KEY:''}:env;
+    const server = spawn(php, ['-S', `127.0.0.1:${p}`, '-t', 'public', 'scripts/php-router.php'], { env:serverEnv, stdio: 'ignore' });
     servers.push(server);
   }
   for (const p of ports) {
@@ -197,12 +199,65 @@ try {
   assert.equal((await request('/api/admin/rental-requests?productCode='+product.code)).body.data.length,1,'manual confirmation appears in product calendar');
   await request('/api/admin/rental-requests','POST',{...manual,id:randomUUID()},409);
   await request('/api/admin/rental-requests','PATCH',{id:manual.id,action:'cancel'});
+  await request('/api/admin/products/publication','PATCH',{...product,published:true});
+  await request('/api/admin/products','PATCH',{...product,deposit:50000});
+  const zeroProduct={...product,code:'ZERO-TEST',slug:'zero-test',deposit:0};
+  await request('/api/admin/products','POST',zeroProduct);
+  const checkout={...rental,id:randomUUID(),token:randomBytes(32).toString('hex'),method:'bank_transfer',phone:'0907654321',items:[{productSlug:'php-test',start:laterDate,end:laterDate},{productSlug:'zero-test',start:laterDate,end:laterDate}],amount:1,total:1};
+  const payment=(await request('/api/checkout','POST',checkout)).body.data;
+  const disabledBase=`http://127.0.0.1:${ports[1]}`;
+  assert.equal((await request('/api/checkout','GET',undefined,200,{base:disabledBase})).body.enabled,false);
+  await request('/api/checkout','POST',{...checkout,id:randomUUID(),phone:'0907654333',method:'payos'},503,{base:disabledBase});
+  assert.equal(payment.state,'manual'); assert.equal(payment.amount,50000); assert.equal(payment.total,600000);
+  assert.equal(payment.bank.name,'BIDV'); assert.equal(payment.bank.holder,'Phạm Gia Tiến'); assert.equal(payment.bank.account,'7411028927');
+  assert.equal((await request('/api/checkout','POST',checkout)).body.data.items[0].id,payment.items[0].id,'checkout retry reuses rental IDs');
+  await request('/api/checkout','POST',{...checkout,name:'Changed'},409);
+  await request('/api/checkout','POST',{...checkout,id:randomUUID()},403,{origin:'https://attacker.example'});
+  await request('/api/checkout/lookup','POST',{id:checkout.id,token:'0'.repeat(64)},404);
+  await request('/api/checkout','POST',{...checkout,id:randomUUID(),items:[checkout.items[0],checkout.items[0]]},422);
+  setup('payment-fixture',checkout.id);
+  await request('/api/rental-requests','POST',{...rental,id:randomUUID(),start:laterDate,end:laterDate},409);
+  const online=payment.items.find(i=>i.productSlug==='php-test');
+  await request('/api/admin/rental-requests','PATCH',{id:online.id,action:'confirm'},409);
+  const sign=data=>createHmac('sha256',env.PAYOS_CHECKSUM_KEY).update(Object.keys(data).sort().map(k=>`${k}=${data[k]}`).join('&')).digest('hex');
+  const event={orderCode:Number(payment.transferContent.slice(4)),amount:payment.amount,currency:'VND',code:'00',reference:'test-payment-1'};
+  await request('/api/payments/webhook','POST',{data:event,signature:'0'.repeat(64)},401);
+  await request('/api/payments/webhook','POST',{data:event,signature:[]},401);
+  const badAmount={...event,amount:1};await request('/api/payments/webhook','POST',{data:badAmount,signature:sign(badAmount)},422);
+  await request('/api/payments/webhook','POST',{data:event,signature:sign(event)});
+  await request('/api/payments/webhook','POST',{data:event,signature:sign(event)});
+  const paid=(await request('/api/checkout/lookup','POST',{id:checkout.id,token:checkout.token})).body.data;
+  assert.equal(paid.state,'paid');assert.equal(paid.items.find(i=>i.productSlug==='php-test').status,'confirmed');
+  assert.equal(paid.items.find(i=>i.productSlug==='zero-test').status,'pending','zero deposit requires store confirmation');
+  const secondEvent={...event,reference:'test-payment-2'};await request('/api/payments/webhook','POST',{data:secondEvent,signature:sign(secondEvent)},409);
+  await request('/api/admin/rental-requests','PATCH',{id:online.id,action:'cancel'});
+  const lateCheckout={...checkout,id:randomUUID(),phone:'0907654322',items:[checkout.items[0]]};
+  const late=(await request('/api/checkout','POST',lateCheckout)).body.data;setup('payment-fixture',lateCheckout.id,'expired');
+  const lateEvent={...event,orderCode:Number(late.transferContent.slice(4)),reference:'test-late'};
+  await request('/api/payments/webhook','POST',{data:lateEvent,signature:sign(lateEvent)});
+  const review=(await request('/api/checkout/lookup','POST',{id:lateCheckout.id,token:lateCheckout.token})).body.data;
+  assert.equal(review.state,'review');assert.equal(review.items[0].status,'pending','late payment cannot reserve an expired booking');
+  for(const i of payment.items) if(i.productSlug==='zero-test') await request('/api/admin/rental-requests','PATCH',{id:i.id,action:'cancel'});
+  const zeroCheckout={...checkout,id:randomUUID(),phone:'0907654323',items:[checkout.items[1]]};
+  const zero=(await request('/api/checkout','POST',zeroCheckout)).body.data;
+  assert.equal(zero.amount,0);assert.equal(zero.state,'manual');assert.equal(zero.items[0].status,'pending');
+  await request('/api/admin/rental-requests','PATCH',{id:zero.items[0].id,action:'confirm'});
+  assert.equal((await request('/api/checkout/lookup','POST',{id:zeroCheckout.id,token:zeroCheckout.token})).body.data.state,'confirmed');
+  await request('/api/admin/rental-requests','PATCH',{id:zero.items[0].id,action:'cancel'});
+  assert.equal((await request('/api/checkout/lookup','POST',{id:zeroCheckout.id,token:zeroCheckout.token})).body.data.state,'cancelled');
+  const partialCheckout={...checkout,id:randomUUID(),phone:'0907654324'};
+  const partial=(await request('/api/checkout','POST',partialCheckout)).body.data;
+  await request('/api/admin/rental-requests','PATCH',{id:partial.items[0].id,action:'cancel'});
+  const partialResult=(await request('/api/checkout/lookup','POST',{id:partialCheckout.id,token:partialCheckout.token})).body.data;
+  assert.equal(partialResult.state,'review','do not show stale transfer instructions after part of the manual checkout was cancelled');
+  assert.equal(partialResult.checkoutUrl,null);
+  await request('/api/admin/products','DELETE',{codes:[zeroProduct.code]});
   await request('/api/admin/products','DELETE',{codes:[product.code]});
   await request('/api/auth/session','DELETE');
   await request('/api/admin/products','GET',undefined,401);
   for(let i=0;i<5;i++)await request('/api/auth/session','POST',{identifier:'test@example.com',password:'wrong'},401);
   await request('/api/auth/session','POST',{identifier:'test@example.com',password:'wrong'},429);
-  console.log('PASS PHP API: migration twice, auth/CSRF/rate limit, catalog/gallery/publication, upload, rental idempotency, concurrent confirmation rollback, cancellation, logout.');
+  console.log('PASS PHP API: migrations, auth/CSRF, catalog, rental concurrency, checkout price/idempotency/token, zero deposit, signed webhook/replay/late payment, cancellation, logout.');
 } finally {
   for (const server of servers) {
     if (server.exitCode === null) { server.kill(); await new Promise(resolve => server.once('exit', resolve)); }

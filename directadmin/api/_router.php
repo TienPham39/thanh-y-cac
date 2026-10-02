@@ -15,6 +15,7 @@ require __DIR__ . '/_pricing.php';
 require __DIR__ . '/_categories.php';
 require __DIR__ . '/_dashboard.php';
 require __DIR__ . '/_users.php';
+require __DIR__ . '/_payments.php';
 $path = rtrim((string)parse_url($_SERVER['REQUEST_URI'] ?? '/api', PHP_URL_PATH), '/');
 $stringError = in_array($path, ['/api/rental-requests', '/api/admin/rental-requests', '/api/products/availability'], true);
 try {
@@ -23,6 +24,9 @@ try {
     if ($path === '/api/admin/products') adminProducts();
     if ($path === '/api/admin/dashboard') adminDashboard();
     if ($path === '/api/admin/users') adminUsers();
+    if ($path === '/api/checkout') checkoutApi();
+    if ($path === '/api/checkout/lookup') checkoutLookup();
+    if ($path === '/api/payments/webhook') paymentWebhook();
     if ($path === '/api/admin/categories') adminCategories();
     if ($path === '/api/admin/products/publication') adminProducts(true);
     if ($path === '/api/admin/uploads') uploadImage();

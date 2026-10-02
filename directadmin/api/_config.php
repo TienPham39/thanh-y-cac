@@ -10,6 +10,12 @@ $environmentHash = getenv('ADMIN_PASSWORD_HASH') ?: '';
 $usePrivateAdmin = isset($private['adminPasswordHash']) && !password_get_info($environmentHash)['algo'];
 
 return [
+    'payosClientId' => getenv('PAYOS_CLIENT_ID') ?: ($private['payosClientId'] ?? ''),
+    'payosApiKey' => getenv('PAYOS_API_KEY') ?: ($private['payosApiKey'] ?? ''),
+    'payosChecksumKey' => getenv('PAYOS_CHECKSUM_KEY') ?: ($private['payosChecksumKey'] ?? ''),
+    'paymentBank' => $private['paymentBank'] ?? 'BIDV',
+    'paymentAccount' => $private['paymentAccount'] ?? '7411028927',
+    'paymentAccountName' => $private['paymentAccountName'] ?? 'Phạm Gia Tiến',
     'host' => getenv('DB_HOST') ?: ($private['host'] ?? 'localhost'),
     'port' => (int) (getenv('DB_PORT') ?: ($private['port'] ?? 3306)),
     'database' => getenv('DB_NAME') ?: ($private['database'] ?? 'thanhyca6aae_tyc'),

@@ -8,7 +8,10 @@ function availability(): never
     if (!is_string($slug) || !preg_match('/^[a-z0-9-]{1,100}$/D', $slug)) fail(422, 'INVALID_REQUEST', 'Mã trang phục không hợp lệ.');
     $db = database();
     if (!sql($db, 'SELECT slug FROM CostumeProduct WHERE slug = ? AND published = 1', [$slug])->fetch()) fail(404, 'NOT_FOUND', 'Không tìm thấy trang phục.');
-    respond(['data' => sql($db, 'SELECT start, end FROM RentalRequest WHERE productSlug = ? AND status = ? AND end >= ? ORDER BY start ASC', [$slug, 'confirmed', today()])->fetchAll()]);
+    $data = sql($db, 'SELECT start, end FROM RentalRequest WHERE productSlug = ? AND status = ? AND end >= ? ORDER BY start ASC', [$slug, 'confirmed', today()])->fetchAll();
+    try { $data = [...$data, ...sql($db, 'SELECT day AS start, day AS end FROM RentalPaymentHold WHERE productSlug = ? AND expiresAt > UTC_TIMESTAMP(3) ORDER BY day', [$slug])->fetchAll()]; }
+    catch (PDOException $e) { if ((int)($e->errorInfo[1] ?? 0) !== 1146) throw $e; }
+    respond(['data' => $data]);
 }
 
 function createRental(bool $admin = false): never
@@ -34,6 +37,7 @@ function createRental(bool $admin = false): never
         $published = $admin ? '' : ' AND published = 1';
         $product = sql($db, "SELECT code, name, price, extraDay, deposit, accessoryFee FROM CostumeProduct WHERE slug = ?{$published} FOR UPDATE", [$data['productSlug']])->fetch();
         if (!$product) fail(404, 'NOT_FOUND', 'Trang phục không còn nhận yêu cầu thuê.');
+        if (paymentHold($db, $data['productSlug'], $data['start'], $data['end'])) fail(409, 'CONFLICT', 'Trang phục đang được giữ tạm để thanh toán. Vui lòng chọn ngày khác.');
         if (sql($db, 'SELECT day FROM RentalReservedDay WHERE productSlug = ? AND day BETWEEN ? AND ? LIMIT 1', [$data['productSlug'], $data['start'], $data['end']])->fetch()) fail(409, 'CONFLICT', 'Khoảng ngày này đã được đặt. Vui lòng chọn ngày khác.');
         $data['productCode'] = $product['code'];
         $data['productName'] = $product['name'];
@@ -65,6 +69,8 @@ function adminRentals(): never
     if ($method === 'POST') createRental(true);
     $db = database();
     if ($method === 'GET') {
+        $paymentJoin = ' LEFT JOIN RentalCheckoutItem ci ON ci.requestId = r.id LEFT JOIN RentalCheckout c ON c.id = ci.checkoutId ';
+        $paymentFields = ', c.id AS checkoutId, c.paymentMethod, c.state AS paymentState, c.orderCode AS paymentCode, c.transactionRef, c.reviewReason, ci.online AS onlinePayment';
         $productCode = $_GET['productCode'] ?? '';
         if (!is_string($productCode) || strlen($productCode) > 40) fail(422, 'INVALID_REQUEST', 'Mã trang phục không hợp lệ.');
         if ($productCode !== '') respond(['data' => sql($db, 'SELECT id, start, end, name, phone FROM RentalRequest WHERE productCode = ? AND status = ? ORDER BY start ASC', [$productCode, 'confirmed'])->fetchAll()]);
@@ -75,7 +81,7 @@ function adminRentals(): never
         $requestId = $_GET['requestId'] ?? '';
         if (!is_string($requestId) || strlen($requestId) > 36) fail(422, 'INVALID_REQUEST', 'Mã yêu cầu không hợp lệ.');
         if ($requestId !== '') {
-            $rows = sql($db, 'SELECT r.*, p.image AS productImage FROM RentalRequest r LEFT JOIN CostumeProduct p ON p.slug = r.productSlug WHERE r.id = ?', [$requestId])->fetchAll();
+            $rows = sql($db, 'SELECT r.*, p.image AS productImage' . $paymentFields . ' FROM RentalRequest r LEFT JOIN CostumeProduct p ON p.slug = r.productSlug' . $paymentJoin . ' WHERE r.id = ?', [$requestId])->fetchAll();
             respond(['data' => array_map('serializeRental', $rows), 'summary' => $summary, 'total' => count($rows), 'unread' => $unread, 'page' => 1, 'pageSize' => 6]);
         }
         $size = filter_var($_GET['pageSize'] ?? 6, FILTER_VALIDATE_INT) ?: 6;
@@ -83,7 +89,7 @@ function adminRentals(): never
         $total = (int)sql($db, 'SELECT COUNT(*) FROM RentalRequest')->fetchColumn();
         $page = min(max(1, (int)ceil($total / $size)), max(1, filter_var($_GET['page'] ?? 1, FILTER_VALIDATE_INT) ?: 1));
         $offset = ($page - 1) * $size;
-        $rows = sql($db, "SELECT r.*, p.image AS productImage FROM RentalRequest r LEFT JOIN CostumeProduct p ON p.slug = r.productSlug ORDER BY r.createdAt DESC, r.id DESC LIMIT {$size} OFFSET {$offset}")->fetchAll();
+        $rows = sql($db, 'SELECT r.*, p.image AS productImage' . $paymentFields . ' FROM RentalRequest r LEFT JOIN CostumeProduct p ON p.slug = r.productSlug' . $paymentJoin . " ORDER BY r.createdAt DESC, r.id DESC LIMIT {$size} OFFSET {$offset}")->fetchAll();
         respond(['data' => array_map('serializeRental', $rows), 'summary' => $summary, 'total' => $total, 'unread' => $unread, 'page' => $page, 'pageSize' => $size]);
     }
     requireOrigin();
@@ -101,6 +107,8 @@ function adminRentals(): never
             if ($row['status'] === 'completed') fail(409, 'CONFLICT', 'Đơn đã nhận lại đồ, không thể hủy.');
             sql($db, "UPDATE RentalRequest SET status = 'cancelled', readAt = COALESCE(readAt, UTC_TIMESTAMP(3)) WHERE id = ?", [$id]);
             sql($db, 'DELETE FROM RentalReservedDay WHERE requestId = ?', [$id]);
+            sql($db, 'DELETE h FROM RentalPaymentHold h JOIN RentalCheckoutItem i ON i.checkoutId = h.checkoutId WHERE i.requestId = ? AND h.productSlug = ?', [$id, $row['productSlug']]);
+            sql($db, "UPDATE RentalCheckout c JOIN RentalCheckoutItem i ON i.checkoutId = c.id SET c.state = 'review', c.reviewReason = 'Đơn đã thu cọc online bị hủy. Cần đối soát/hoàn tiền thủ công.' WHERE i.requestId = ? AND c.state = 'paid'", [$id]);
         } elseif ($action === 'return') {
             if (!in_array($row['status'], ['confirmed', 'completed'], true)) fail(409, 'CONFLICT', 'Chỉ nhận lại đồ của đơn đã chốt.');
             if ($row['status'] === 'confirmed') {
@@ -108,6 +116,10 @@ function adminRentals(): never
                 sql($db, 'DELETE FROM RentalReservedDay WHERE requestId = ? AND day >= ?', [$id, today()]);
             }
         } elseif ($row['status'] !== 'confirmed') {
+            sql($db, 'SELECT slug FROM CostumeProduct WHERE slug = ? FOR UPDATE', [$row['productSlug']]);
+            $online = sql($db, 'SELECT online FROM RentalCheckoutItem WHERE requestId = ?', [$id])->fetchColumn();
+            if ($online) fail(409, 'PAYMENT_PENDING', 'Đơn payOS chỉ chốt qua giao dịch đã xác minh. Không xác nhận cọc thủ công.');
+            if (paymentHold($db, $row['productSlug'], $row['start'], $row['end'])) fail(409, 'CONFLICT', 'Trang phục đang được giữ tạm để thanh toán.');
             if ($row['status'] !== 'pending') fail(409, 'CONFLICT', 'Đơn đã hủy hoặc hoàn tất, không thể chốt lại.');
             if ($row['start'] < today()) fail(422, 'INVALID_REQUEST', 'Ngày nhận đã qua. Vui lòng tạo yêu cầu mới.');
             $days = reservationDays($row['start'], $row['end']);

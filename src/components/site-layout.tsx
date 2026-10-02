@@ -14,11 +14,12 @@ import {
   type SetStateAction,
 } from "react";
 import { Icon, type IconName } from "./icon";
+import { parseCart, type CartItem } from "@/lib/cart";
 type State = {
   favorites: string[];
   setFavorites: Dispatch<SetStateAction<string[]>>;
-  cart: string[];
-  setCart: Dispatch<SetStateAction<string[]>>;
+  cart: CartItem[];
+  setCart: Dispatch<SetStateAction<CartItem[]>>;
 };
 const Context = createContext<State | null>(null);
 export function useSiteState() {
@@ -62,7 +63,10 @@ export default function SiteLayout({
   const home = pathname === "/";
   const [menuOpen, setMenuOpen] = useState(false);
   const [favorites, setFavorites] = useState<string[]>([]);
-  const [cart, setCart] = useState<string[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cartReady, setCartReady] = useState(false);
+  useEffect(() => { try { setCart(parseCart(localStorage.getItem("tyc-cart"))); } catch {} setCartReady(true); const sync = (e: StorageEvent) => { if (e.key === "tyc-cart") setCart(parseCart(e.newValue)); }; window.addEventListener("storage", sync); return () => window.removeEventListener("storage", sync); }, []);
+  useEffect(() => { if (cartReady) try { localStorage.setItem("tyc-cart", JSON.stringify(cart)); } catch {} }, [cart, cartReady]);
   const [panel, setPanel] = useState<{
     kind: string;
     title?: string;
@@ -186,6 +190,9 @@ export default function SiteLayout({
               height={42}
               alt=""
             />
+            <Link href="/gio-hang/" aria-label={`Giỏ hàng: ${cart.length} trang phục`} className="relative inline-flex min-h-11 shrink-0 items-center gap-2 px-2 text-sm font-medium text-[#302b29] transition hover:text-[#80151c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#80151c]">
+              <span className="relative"><Icon name="cart" className="!h-7 !w-7"/><span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ffcfbc] px-1 text-xs text-[#781216]">{cart.length}</span></span><span className="hidden xl:block">Giỏ hàng</span>
+            </Link>
             <button
               className="button button-primary !border-[#b8872e] header-booking font-['Inter'] !border-[#B88632]"
               onClick={() => setPanel({ kind: "booking" })}

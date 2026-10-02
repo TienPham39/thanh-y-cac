@@ -1,4 +1,5 @@
 "use client";
+import { addToCart } from "@/lib/cart";
 /* THESIS: A clear rental storefront: vertical thumbnails, large image, booking beside it.
  * OWN-WORLD: White canvas, neutral rules, wine accents only for actions and price.
  * STORY: Inspect the garment, choose a date range, then continue to rental details.
@@ -41,9 +42,10 @@ export default function ProductDetailPage({
   related: CatalogProduct[];
 }) {
   const router = useRouter();
-  const { favorites, setFavorites } = useSiteState();
+  const { favorites, setFavorites, cart, setCart } = useSiteState();
   const [range, setRange] = useState<RentalRange>({ start: "", end: "" });
   const favorite = favorites.includes(product.slug);
+  const [cartMessage, setCartMessage] = useState("");
   const toggleFavorite = (slug: string) =>
     setFavorites((current) =>
       current.includes(slug)
@@ -161,13 +163,9 @@ export default function ProductDetailPage({
                 <Icon name="chat" className="!h-4 !w-4" />
                 Đặt thuê qua Zalo
               </a>
-              <a
-                href="#thong-tin-giu-do"
-                className="flex min-h-12 items-center justify-center bg-[#302b29] px-4 text-sm font-semibold text-white hover:bg-black"
-              >
-                Đăng ký thuê
-              </a>
+              <button type="button" onClick={() => { if (cart.length >= 8 && !cart.some(i=>i.productSlug===product.slug)) { setCartMessage("Giỏ hàng tối đa 8 trang phục."); return; } setCart(addToCart(cart, {productSlug:product.slug,start:range.start,end:range.end})); setCartMessage("Đã thêm vào giỏ hàng. Chọn ngày thuê và thanh toán cọc tại giỏ hàng."); }} className="flex min-h-12 items-center justify-center gap-2 border border-[#b8872e] bg-[#781216] px-4 text-sm font-semibold text-white transition hover:bg-[#590008]"><Icon name="cart"/>Thêm vào giỏ hàng</button>
             </div>
+            {cartMessage && <p role="status" className="mt-3 text-sm text-[#781216]">{cartMessage} <Link href="/gio-hang/" className="font-semibold underline">Xem giỏ hàng</Link></p>}
             <a
               href="https://zalo.me/0779312303"
               target="_blank"

@@ -3,7 +3,11 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/directadmin/api/_core.php';
 require dirname(__DIR__) . '/directadmin/api/_validation.php';
 require dirname(__DIR__) . '/directadmin/api/_catalog.php';
+require dirname(__DIR__) . '/directadmin/api/_payments.php';
 function check(bool $condition): void { if (!$condition) throw new RuntimeException('Validation assertion failed'); }
+// Independent canonical strings test field ordering, nulls and nested transactions.
+check(paymentSignature(['z'=>null,'amount'=>50000,'a'=>'Thành công'], 'test-key') === hash_hmac('sha256', 'a=Thành công&amount=50000&z=', 'test-key'));
+check(paymentSignature(['transactions'=>[['reference'=>'x','amount'=>1]]], 'test-key') === hash_hmac('sha256', 'transactions=[{"amount":1,"reference":"x"}]', 'test-key'));
 check(!validDate('2026-02-29'));
 check(validDate('2028-02-29'));
 check(reservationDays('2026-12-31', '2027-01-01') === ['2026-12-31', '2027-01-01']);
